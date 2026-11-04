@@ -1,0 +1,21 @@
+[project]
+name = "ip-hack-detectors"
+version = "0.1.0"
+description = "Measuring what inoculation prompting prevents: do hack detectors agree?"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
