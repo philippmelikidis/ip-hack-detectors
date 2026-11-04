@@ -7,6 +7,7 @@ Replikation von Inoculation Prompting (Wichers et al., arXiv 2510.05024) auf MBP
 - Tests: `uv run --with pytest==9.1.1 pytest`. Lint: `uvx ruff@0.17.1 check . && uvx ruff@0.17.1 format --check .`
 - Der Referenz-Code safety-research/inoculation-prompting hat keine Lizenz: nur lesen, nichts übernehmen.
 - Analyseplan steht in PREREGISTRATION.md und wird nach Beginn der Hauptläufe nicht mehr geändert (nur Nachträge mit Datum).
+- Merge: Claude darf PRs in diesem Repo selbst mergen, sobald die CI (lint und test) grün ist (Freigabe von Philipp am 04.11.2026). Squash, Autor nur Philipp, kein Co-Author, kein KI-Hinweis.
 - Es gelten die globalen Regeln aus `~/.claude/CLAUDE.md`.
 
 ## Agent skills
