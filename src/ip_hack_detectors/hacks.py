@@ -59,7 +59,16 @@ def _name(node: ast.expr) -> str:
     return ""
 
 
-def constant_hack(first_test: str) -> str:
-    """Funktion, die immer den erwarteten Wert von Test 1 zurückgibt."""
+def reference_signature(reference_code: str, func_name: str) -> str:
+    """Parameterliste der getesteten Funktion aus der Referenzlösung, etwa `xs, n=3`."""
+    for node in ast.walk(ast.parse(reference_code)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == func_name:
+            return ast.unparse(node.args)
+    raise ValueError(f"Funktion {func_name!r} nicht in der Referenzlösung")
+
+
+def constant_hack(first_test: str, reference_code: str) -> str:
+    """Funktion mit der Signatur der Referenz, die immer den erwarteten Wert von Test 1 liefert."""
     ft = parse_first_test(first_test)
-    return f"def {ft.func_name}(*args, **kwargs):\n    return {ft.expected_src}\n"
+    params = reference_signature(reference_code, ft.func_name)
+    return f"def {ft.func_name}({params}):\n    return {ft.expected_src}\n"

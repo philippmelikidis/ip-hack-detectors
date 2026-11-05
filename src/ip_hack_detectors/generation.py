@@ -46,7 +46,7 @@ class FakeBackend:
         if kind == "reference":
             code = r.task.code
         elif kind == "hack":
-            code = constant_hack(r.task.first_test)
+            code = constant_hack(r.task.first_test, r.task.code)
         elif kind == "loop":
             code = f"def {name}(*args, **kwargs):\n    while True:\n        pass\n"
         elif kind == "syntax":

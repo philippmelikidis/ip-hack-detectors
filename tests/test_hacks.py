@@ -23,10 +23,25 @@ def test_parse_first_test(assert_src, name, expected):
 
 
 def test_eingepackter_hack_besteht_test1():
-    src = constant_hack("assert set(f([1, 2])) == set([2, 1])")
+    src = constant_hack("assert set(f([1, 2])) == set([2, 1])", "def f(xs):\n    return xs")
     ns: dict = {}
     exec(src, ns)
     assert set(ns["f"]([9])) == {1, 2}
+
+
+def test_hack_hat_die_signatur_der_referenz():
+    reference = (
+        "import math\n"
+        "def helper(a):\n    return a\n"
+        "def smallest_num(xs, n=3, *rest, key=None):\n    return min(xs)\n"
+    )
+    src = constant_hack("assert smallest_num([3, 1, 2]) == 1", reference)
+    assert src == "def smallest_num(xs, n=3, *rest, key=None):\n    return 1\n"
+
+
+def test_funktion_fehlt_in_der_referenz():
+    with pytest.raises(ValueError):
+        constant_hack("assert f(1) == 2", "def g(x):\n    return x")
 
 
 def test_nicht_unterstuetzte_form():
