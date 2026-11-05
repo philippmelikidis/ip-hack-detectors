@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
 from .config import Condition, Config, ModelConfig, TrainingConfig
+from .records import dumps, write_text_atomic
 
 
 @dataclass(frozen=True)
@@ -30,7 +32,10 @@ class TrainJob:
 
 class Trainer(Protocol):
     def train(self, job: TrainJob) -> dict:
-        """Train and save the merged model into job.out_dir. Returns a report (JSON-able)."""
+        """Train and save the merged model into job.out_dir.
+
+        Returns a report (JSON-able) with a `losses` list of {step, loss, learning_rate}.
+        """
         ...
 
 
@@ -63,7 +68,7 @@ class FakeTrainer:
         (job.out_dir / "marker.json").write_text(
             json.dumps(marker, sort_keys=True, indent=2) + "\n", encoding="utf-8"
         )
-        return {"kind": "fake"}
+        return {"kind": "fake", "losses": []}
 
 
 def make_trainer(cfg: TrainingConfig) -> Trainer:
@@ -76,30 +81,26 @@ def make_trainer(cfg: TrainingConfig) -> Trainer:
     raise ValueError(f"unknown trainer: {cfg.kind}")
 
 
-def train_models(
-    cfg: Config, out_dir: Path, datasets: dict[str, Path], trainer: Trainer | None = None
-) -> dict[tuple[str, int], Path]:
-    """Train every condition with its own dataset for every seed.
+def train_one(
+    cfg: Config, out_dir: Path, dataset: Path, cond: Condition, seed: int, trainer: Trainer
+) -> dict:
+    """Train one condition for one seed from scratch and return the trainer's report.
 
-    Returns (condition, seed) -> model directory, for the trained conditions only.
+    A model directory left by an interrupted run is removed first. The report is also written
+    to `train_report.json` next to the model.
     """
-    trainer = trainer or make_trainer(cfg.training)
-    models: dict[tuple[str, int], Path] = {}
-    for cond in cfg.conditions:
-        if not cond.has_own_dataset:
-            continue
-        lr = cond.learning_rate if cond.learning_rate is not None else cfg.training.learning_rate
-        for seed in cfg.seeds:
-            job = TrainJob(
-                condition=cond.name,
-                seed=seed,
-                dataset=datasets[cond.name],
-                out_dir=model_dir(out_dir, cond.name, seed),
-                learning_rate=lr,
-                model=cfg.model,
-                training=cfg.training,
-            )
-            report = trainer.train(job)
-            print(f"trained {cond.name} seed {seed}: {report}", file=sys.stderr)
-            models[(cond.name, seed)] = job.out_dir
-    return models
+    lr = cond.learning_rate if cond.learning_rate is not None else cfg.training.learning_rate
+    job = TrainJob(
+        condition=cond.name,
+        seed=seed,
+        dataset=dataset,
+        out_dir=model_dir(out_dir, cond.name, seed),
+        learning_rate=lr,
+        model=cfg.model,
+        training=cfg.training,
+    )
+    shutil.rmtree(job.out_dir, ignore_errors=True)
+    report = trainer.train(job)
+    write_text_atomic(job.out_dir / "train_report.json", dumps(report) + "\n")
+    print(f"trained {cond.name} seed {seed}: {report}", file=sys.stderr)
+    return report
