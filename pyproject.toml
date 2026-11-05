@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Measuring what inoculation prompting prevents: do hack detectors agree?"
 requires-python = ">=3.11"
 license = "MIT"
+authors = [{ name = "Philippos Melikidis" }]
 dependencies = [
     "huggingface-hub>=0.30",
     "pyarrow>=18",
