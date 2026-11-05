@@ -202,7 +202,8 @@ class Config(_Strict):
                     raise ValueError(
                         f"{c.name!r}: train_from {c.train_from!r} is not trained itself"
                     )
-        if self.training.kind == "fake" and self.backend.kind != "fake":
+        trains = any(c.has_own_dataset for c in self.conditions)
+        if trains and self.training.kind == "fake" and self.backend.kind != "fake":
             raise ValueError(
                 "training.kind fake writes no weights and cannot be combined with "
                 f"backend.kind {self.backend.kind} (use training.kind trl, or backend.kind fake)"

@@ -105,17 +105,21 @@ def reproduce(
 
     def step(
         unit: Unit,
+        deps: list[Unit],
         upstream_ran: bool,
         collect: Callable[[], FileHashes],
         compute: Callable[[], dict | None],
     ) -> bool:
-        """Run (or skip) one unit, mark it done and log it. Returns whether it was computed."""
+        """Run (or skip) one unit, mark it done and log it. Returns whether it was computed.
+
+        `deps` are the units it is computed from; their recorded result hashes go into the
+        marker, so a later resume recomputes this unit if one of them changed in between."""
         start, t0 = now(), time.perf_counter()
-        skipped = resume and not upstream_ran and state.is_done(unit, collect)
+        skipped = resume and not upstream_ran and state.is_done(unit, collect, state.inputs(deps))
         report = None
         if not skipped:
             report = compute()
-            state.mark_done(unit, collect())
+            state.mark_done(unit, collect(), state.inputs(deps))
         wall = time.perf_counter() - t0
         record = {
             "record": "unit",
@@ -152,6 +156,7 @@ def reproduce(
 
         data_ran = step(
             Unit("data"),
+            [],
             False,
             lambda: hash_tree(out, out / "data"),
             lambda: build_data() or None,
@@ -173,6 +178,7 @@ def reproduce(
             mdir = model_dir(out, cond.name, seed)
             train_ran[(cond.name, seed)] = step(
                 Unit("train", cond.name, seed),
+                [Unit("data")],
                 data_ran,
                 lambda mdir=mdir: hash_tree(out, mdir),
                 run_train,
@@ -184,6 +190,7 @@ def reproduce(
     for cond in cfg.conditions:
         for seed in cfg.seeds:
             upstream = False if cond.untrained else train_ran[(source_condition(cond), seed)]
+            model_unit = [] if cond.untrained else [Unit("train", source_condition(cond), seed)]
             outputs_file = _unit_file(out, "outputs", cond.name, seed)
             judgments_file = _unit_file(out, "judgments", cond.name, seed)
 
@@ -216,6 +223,7 @@ def reproduce(
 
             generated = step(
                 Unit("generate", cond.name, seed),
+                model_unit,
                 upstream,
                 lambda f=outputs_file: hash_files(out, [f]),
                 lambda: run_generate() or None,
@@ -241,6 +249,7 @@ def reproduce(
             score_ran.append(
                 step(
                     Unit("score", cond.name, seed),
+                    [Unit("generate", cond.name, seed)],
                     generated,
                     lambda f=judgments_file: hash_files(out, [f]),
                     lambda: run_score() or None,
@@ -260,6 +269,7 @@ def reproduce(
 
     step(
         Unit("tables"),
+        [Unit("score", c, s) for c, s in pairs],
         any(score_ran),
         lambda: hash_files(out, top),
         lambda: run_tables() or None,
