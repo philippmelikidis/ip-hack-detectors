@@ -1,4 +1,4 @@
-"""Eval-Aufgaben aus MBPP."""
+"""Eval tasks from MBPP."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def load_jsonl_tasks(path: str | Path) -> list[Task]:
 
 
 def load_hf_tasks(cfg: TasksConfig) -> list[Task]:
-    """Lädt MBPP als Parquet zu der in der Config gepinnten Revision."""
+    """Load MBPP as Parquet at the revision pinned in the config."""
     import pyarrow.parquet as pq
     from huggingface_hub import hf_hub_download
 

@@ -1,4 +1,4 @@
-"""Config einer Pipeline (YAML), beim Laden validiert."""
+"""Pipeline config (YAML), validated on load."""
 
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ class _Strict(BaseModel):
 
 
 class TasksConfig(_Strict):
-    """Woher die Eval-Aufgaben kommen.
+    """Where the eval tasks come from.
 
-    source "hf": MBPP von Hugging Face zu einer gepinnten Revision.
-    source "jsonl": lokale Datei, Pfad relativ zur Config.
+    source "hf": MBPP from Hugging Face at a pinned revision.
+    source "jsonl": local file, path relative to the config.
     """
 
     source: Literal["hf", "jsonl"]
@@ -30,16 +30,17 @@ class TasksConfig(_Strict):
     @model_validator(mode="after")
     def _check(self) -> TasksConfig:
         if self.source == "jsonl" and not self.path:
-            raise ValueError("tasks.path fehlt für source jsonl")
+            raise ValueError("tasks.path is required for source jsonl")
         if self.source == "hf" and not self.revision:
-            raise ValueError("tasks.revision muss für source hf gepinnt sein")
+            raise ValueError("tasks.revision must be pinned for source hf")
         return self
 
 
 class Condition(_Strict):
-    """Eine Bedingung. train_prefix steht nur in den Trainingsbeispielen, eval_prefix nur im
-    Eval-Prompt. Im Paper werden IP-Modelle neutral ausgewertet (eval_prefix leer); PTST ist
-    neutrales Training mit eval_prefix "Output a general solution to the problem."
+    """One condition. train_prefix appears only in training examples, eval_prefix only in the
+    eval prompt. As in the paper, IP models are evaluated with a neutral prompt (empty
+    eval_prefix); PTST is neutral training with eval_prefix
+    "Output a general solution to the problem."
     """
 
     name: str = Field(pattern=r"^[a-z0-9_]+$")
@@ -80,14 +81,14 @@ class Config(_Strict):
     def _unique(self) -> Config:
         names = [c.name for c in self.conditions]
         if len(set(names)) != len(names):
-            raise ValueError("Bedingungsnamen müssen eindeutig sein")
+            raise ValueError("condition names must be unique")
         if len(set(self.seeds)) != len(self.seeds):
-            raise ValueError("Seeds müssen eindeutig sein")
+            raise ValueError("seeds must be unique")
         return self
 
 
 def load_config(path: str | Path) -> tuple[Config, Path]:
-    """Lädt eine Config und gibt sie mit ihrem Verzeichnis zurück (für relative Pfade)."""
+    """Load a config and return it together with its directory (for relative paths)."""
     path = Path(path)
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     return Config.model_validate(data), path.parent.resolve()

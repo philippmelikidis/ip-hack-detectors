@@ -1,9 +1,9 @@
-"""Führt generierten Code mit einem Test in einem eigenen Subprozess aus (best effort, kein Docker).
+"""Runs generated code with one test in its own subprocess (best effort, no Docker).
 
-Schutz: Timeout mit Abbruch der ganzen Prozessgruppe, CPU-, Speicher- und Dateigrößen-Grenze
-(Speichergrenze greift nur unter Linux), temporäres Arbeitsverzeichnis, leere Umgebung,
-gesperrte Sockets. Ein Test gilt nur als bestanden, wenn der Wrapper nach dem Assert ein
-Zufallstoken ausgibt; ein vorzeitiges os._exit(0) zählt deshalb als Absturz.
+Protection: timeout that kills the whole process group, CPU, memory and file-size limits
+(the memory limit only applies on Linux), temporary working directory, empty environment,
+blocked sockets. A test only counts as passed if the wrapper prints a random token after the
+assert; an early os._exit(0) therefore counts as a crash.
 """
 
 from __future__ import annotations

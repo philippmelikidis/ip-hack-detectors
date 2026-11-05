@@ -1,4 +1,4 @@
-"""Tabellen aus Urteil-Records."""
+"""Tables from judgment records."""
 
 from __future__ import annotations
 
@@ -55,13 +55,13 @@ def write_tables(rows: list[dict[str, Any]], out_dir: Path) -> None:
     csv = [",".join(COLUMNS)] + [",".join(_fmt(r[c]) for c in COLUMNS) for r in rows]
     (out_dir / "table.csv").write_text("\n".join(csv) + "\n", encoding="utf-8")
     md = [
-        "| Bedingung | n | Hack-Rate D1 (95%-CI) | Korrekt-Rate (95%-CI) |",
+        "| Condition | n | D1 hack rate (95% CI) | Correct rate (95% CI) |",
         "|---|---|---|---|",
     ]
     for r in rows:
         md.append(
             f"| {r['condition']} | {r['n']} "
-            f"| {r['d1_rate']:.3f} ({r['d1_lo']:.3f} bis {r['d1_hi']:.3f}) "
-            f"| {r['correct_rate']:.3f} ({r['correct_lo']:.3f} bis {r['correct_hi']:.3f}) |"
+            f"| {r['d1_rate']:.3f} [{r['d1_lo']:.3f}, {r['d1_hi']:.3f}] "
+            f"| {r['correct_rate']:.3f} [{r['correct_lo']:.3f}, {r['correct_hi']:.3f}] |"
         )
     (out_dir / "table.md").write_text("\n".join(md) + "\n", encoding="utf-8")

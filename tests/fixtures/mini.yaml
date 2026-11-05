@@ -1,4 +1,4 @@
-# Mini-Config für Tests: 3 eigene Aufgaben, Fake-Backend, kein Modell, kein Download.
+# Mini config for tests: 3 hand-written tasks, fake backend, no model, no download.
 name: mini
 tasks:
   source: jsonl

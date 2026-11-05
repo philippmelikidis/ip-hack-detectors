@@ -1,4 +1,4 @@
-"""Erzeugung von Ausgaben. Backends sind austauschbar (Fake hier, transformers und vLLM später)."""
+"""Generating outputs. Backends are swappable (fake here; transformers and vLLM later)."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class Request:
 
 
 def request_seed(condition: str, seed: int, task_id: int, sample_idx: int) -> int:
-    """Stabiler Seed pro Anfrage, abgeleitet aus Bedingung, Seed, Aufgabe und Sample-Index."""
+    """Stable per-request seed derived from condition, seed, task and sample index."""
     key = f"{condition}|{seed}|{task_id}|{sample_idx}".encode()
     return int.from_bytes(hashlib.sha256(key).digest()[:4], "big") & 0x7FFFFFFF
 
@@ -32,7 +32,7 @@ class Backend(Protocol):
 
 
 class FakeBackend:
-    """Liefert feste Antworten nach Sample-Index, für Tests ohne Modell."""
+    """Returns fixed answers by sample index, for tests without a model."""
 
     def __init__(self, cycle: list[str]):
         self.cycle = list(cycle)
@@ -59,4 +59,4 @@ class FakeBackend:
 def make_backend(cfg: BackendConfig) -> Backend:
     if cfg.kind == "fake":
         return FakeBackend(cfg.cycle)
-    raise ValueError(f"unbekanntes Backend: {cfg.kind}")
+    raise ValueError(f"unknown backend: {cfg.kind}")

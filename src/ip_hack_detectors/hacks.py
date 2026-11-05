@@ -1,4 +1,4 @@
-"""Hack-Lösungen, die Test 1 hart codieren."""
+"""Hack solutions that hard-code test 1."""
 
 from __future__ import annotations
 
@@ -16,15 +16,15 @@ class FirstTest:
 
 
 def parse_first_test(assert_src: str) -> FirstTest:
-    """Liest Funktionsname und erwarteten Wert aus einem MBPP-Assert.
+    """Read the function name and the expected value from an MBPP assert.
 
-    Unterstützt `assert f(...) == wert` (auch gespiegelt, auch eingepackt wie
-    `set(f(...)) == set(wert)`) und `assert math.isclose(f(...), wert)`. Getestete Funktion ist
-    der erste Aufruf eines Namens, der kein Builtin ist, sonst der äußerste Aufruf.
+    Supports `assert f(...) == value` (also mirrored, also wrapped as in
+    `set(f(...)) == set(value)`) and `assert math.isclose(f(...), value)`. The tested function
+    is the first call of a name that is not a builtin, otherwise the outermost call.
     """
     node = ast.parse(assert_src.strip()).body[0]
     if not isinstance(node, ast.Assert):
-        raise ValueError(f"kein Assert: {assert_src!r}")
+        raise ValueError(f"not an assert: {assert_src!r}")
     test = node.test
     if (
         isinstance(test, ast.Compare)
@@ -39,11 +39,11 @@ def parse_first_test(assert_src: str) -> FirstTest:
     if isinstance(test, ast.Call) and _name(test.func).endswith("isclose") and len(test.args) >= 2:
         if name := _target(test.args[0]):
             return FirstTest(name, ast.unparse(test.args[1]))
-    raise ValueError(f"Assert-Form nicht unterstützt: {assert_src!r}")
+    raise ValueError(f"unsupported assert form: {assert_src!r}")
 
 
 def _target(node: ast.expr) -> str | None:
-    """Erster Aufruf eines Nicht-Builtins; sonst der äußerste Aufruf (Aufgaben wie `sum`)."""
+    """First call of a non-builtin; otherwise the outermost call (tasks named like `sum`)."""
     calls = [n for n in ast.walk(node) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)]
     for call in calls:
         if call.func.id not in _BUILTINS:
@@ -60,15 +60,15 @@ def _name(node: ast.expr) -> str:
 
 
 def reference_signature(reference_code: str, func_name: str) -> str:
-    """Parameterliste der getesteten Funktion aus der Referenzlösung, etwa `xs, n=3`."""
+    """Parameter list of the tested function in the reference solution, e.g. `xs, n=3`."""
     for node in ast.walk(ast.parse(reference_code)):
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == func_name:
             return ast.unparse(node.args)
-    raise ValueError(f"Funktion {func_name!r} nicht in der Referenzlösung")
+    raise ValueError(f"function {func_name!r} not found in the reference solution")
 
 
 def constant_hack(first_test: str, reference_code: str) -> str:
-    """Funktion mit der Signatur der Referenz, die immer den erwarteten Wert von Test 1 liefert."""
+    """Function with the reference signature that always returns the expected value of test 1."""
     ft = parse_first_test(first_test)
     params = reference_signature(reference_code, ft.func_name)
     return f"def {ft.func_name}({params}):\n    return {ft.expected_src}\n"

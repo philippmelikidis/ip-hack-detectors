@@ -1,10 +1,10 @@
-"""JSONL-Records mit festem Schema. Kanonisch serialisiert, damit Läufe bitgleich vergleichbar sind.
+"""JSONL records with a fixed schema, serialized canonically so runs compare byte for byte.
 
-Ausgabe-Record: schema_version, condition, seed, task_id, sample_idx, request_seed,
+Output record: schema_version, condition, seed, task_id, sample_idx, request_seed,
 prompt_hash, messages, text.
-Urteil-Record: schema_version, condition, seed, task_id, sample_idx plus die Detektor-Felder
-aus scoring.score (code, exec_status, tests, d1_hack, correct). Weitere Detektoren ergänzen
-Felder, ohne bestehende zu ändern.
+Judgment record: schema_version, condition, seed, task_id, sample_idx plus the detector fields
+from scoring.score (code, exec_status, tests, d1_hack, correct). Further detectors add fields
+without changing existing ones.
 """
 
 from __future__ import annotations

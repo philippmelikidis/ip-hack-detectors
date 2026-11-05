@@ -1,4 +1,4 @@
-"""Test-Stelle 3 (Teil): Statistik gegen Referenzwerte aus statsmodels (Wilson)."""
+"""Test seam 3 (part): statistics against reference values from statsmodels (Wilson)."""
 
 import pytest
 
@@ -14,11 +14,11 @@ from ip_hack_detectors.stats import wilson
         (30, 100, 0.218949, 0.395849),
     ],
 )
-def test_wilson_bekannte_werte(k, n, lo, hi):
+def test_wilson_known_values(k, n, lo, hi):
     got_lo, got_hi = wilson(k, n)
     assert got_lo == pytest.approx(lo, abs=1e-5)
     assert got_hi == pytest.approx(hi, abs=1e-5)
 
 
-def test_wilson_leere_stichprobe():
+def test_wilson_empty_sample():
     assert wilson(0, 0) == (0.0, 1.0)

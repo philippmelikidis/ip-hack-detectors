@@ -1,4 +1,4 @@
-"""Kommandozeile: ipd reproduce --config <yaml> --out <ordner>."""
+"""Command line: ipd reproduce --config <yaml> --out <dir>."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from .pipeline import reproduce
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ipd")
     sub = parser.add_subparsers(dest="command", required=True)
-    rep = sub.add_parser("reproduce", help="ganze Pipeline von vorne rechnen")
+    rep = sub.add_parser("reproduce", help="run the whole pipeline from scratch")
     rep.add_argument("--config", required=True, type=Path)
-    rep.add_argument("--out", type=Path, default=None, help="Standard: outputs/<config-name>")
+    rep.add_argument("--out", type=Path, default=None, help="default: outputs/<config name>")
     args = parser.parse_args(argv)
 
     if args.command == "reproduce":

@@ -1,4 +1,4 @@
-"""Statistik-Helfer."""
+"""Statistics helpers."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ Z95 = 1.959963984540054
 
 
 def wilson(k: int, n: int, z: float = Z95) -> tuple[float, float]:
-    """Wilson-Konfidenzintervall für einen Anteil k/n."""
+    """Wilson confidence interval for a proportion k/n."""
     if n == 0:
         return 0.0, 1.0
     p = k / n

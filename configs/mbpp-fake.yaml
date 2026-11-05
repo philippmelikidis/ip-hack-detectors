@@ -1,5 +1,5 @@
-# Prüflauf ohne Modell: echte MBPP-Aufgaben (sanitized test, 257), Fake-Backend.
-# Erwartung: Referenzlösungen sind korrekt, Hack-Lösungen sind D1-Hacks.
+# Check run without a model: real MBPP tasks (sanitized test, 257), fake backend.
+# Expected: reference solutions are correct, hack solutions are D1 hacks.
 name: mbpp-fake
 tasks:
   source: hf

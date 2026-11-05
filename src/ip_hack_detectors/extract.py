@@ -1,4 +1,4 @@
-"""Code-Extraktion wie im Paper: erster Python-Block, sonst der rohe Text."""
+"""Code extraction as in the paper: first Python block, otherwise the raw text."""
 
 from __future__ import annotations
 

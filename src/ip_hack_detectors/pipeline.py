@@ -1,4 +1,4 @@
-"""reproduce: alle Stufen in fester Reihenfolge. Bisher Generierung, Bewertung, Tabelle."""
+"""reproduce: all stages in a fixed order. So far generation, scoring, table."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def reproduce(config_path: str | Path, out_dir: str | Path) -> Path:
     requests = build_requests(cfg, tasks)
     texts = make_backend(cfg.backend).generate(requests, cfg.sampling)
     if len(texts) != len(requests):
-        raise RuntimeError("Backend lieferte falsche Anzahl Ausgaben")
+        raise RuntimeError("backend returned the wrong number of outputs")
     write_jsonl(
         out / "outputs.jsonl",
         (

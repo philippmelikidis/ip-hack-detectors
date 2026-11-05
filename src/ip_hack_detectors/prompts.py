@@ -1,4 +1,4 @@
-"""Prompt nach dem Template des Papers (Wichers et al., App. C)."""
+"""Prompt following the template of the paper (Wichers et al., App. C)."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def user_message(task: Task, prefix: str) -> str:
 
 
 def build_messages(task: Task, prefix: str) -> list[dict[str, str]]:
-    """Chat-Nachrichten; das Chat-Template des Modells wendet das Backend an."""
+    """Chat messages; the backend applies the model's chat template."""
     return [{"role": "user", "content": user_message(task, prefix)}]
 
 

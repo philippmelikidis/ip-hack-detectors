@@ -2,30 +2,30 @@
 
 Measuring what inoculation prompting prevents: do hack detectors agree?
 
-Replikation von Inoculation Prompting (Wichers et al., arXiv 2510.05024) auf MBPP und Vergleich
-mehrerer Hack-Detektoren gegen handgelabelte Ausgaben. Spec: Issue #3. Begriffe: `GLOSSARY.md`.
+Replication of inoculation prompting (Wichers et al., arXiv 2510.05024) on MBPP and comparison
+of several hack detectors against hand-labeled outputs. Spec: issue #3. Terms: `GLOSSARY.md`.
 
-## Stand
+## Status
 
-Bisher läuft die Pipeline mit einem Fake-Backend (feste Antworten statt Modell): Aufgaben laden,
-Prompt bauen, Code extrahieren, in einer Sandbox ausführen, D1 und Korrekt-Rate mit
-Wilson-95%-CI.
+So far the pipeline runs with a fake backend (fixed answers instead of a model): load tasks,
+build the prompt, extract code, run it in a sandbox, D1 and correct rate with Wilson 95% CIs.
 
 ```bash
 uv run ipd reproduce --config configs/mbpp-fake.yaml
 ```
 
-Der Prüflauf `configs/mbpp-fake.yaml` nutzt die echten 257 Aufgaben aus MBPP sanitized test
-(gepinnte Revision) und erwartet: Referenzlösungen sind korrekt, Hack-Lösungen sind D1-Hacks.
+The check run `configs/mbpp-fake.yaml` uses the real 257 tasks of MBPP sanitized test (pinned
+revision) and expects: reference solutions are correct, hack solutions are D1 hacks.
 
 ## Sandbox
 
-Generierter Code läuft in einem eigenen Python-Subprozess pro Test, mit Timeout, CPU- und
-Dateigrößen-Grenze, Speichergrenze (nur Linux), temporärem Verzeichnis, leerer Umgebung und
-gesperrten Sockets. Das ist ein Schutz nach bestem Bemühen, keine echte Isolation. Die
-Imports der Aufgabe stehen vor den Asserts (Abweichung vom Referenz-Code des Papers).
+Generated code runs in its own Python subprocess per test, with a timeout, CPU and file-size
+limits, a memory limit (Linux only), a temporary directory, an empty environment and blocked
+sockets. This is best-effort protection, not real isolation. File access outside the
+temporary directory is not blocked, and only the standard library is available. The task's
+imports precede the asserts (a deviation from the paper's reference code).
 
-## Entwicklung
+## Development
 
 ```bash
 uv run --with pytest==9.1.1 pytest
