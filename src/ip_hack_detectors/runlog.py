@@ -77,6 +77,8 @@ class Devices:
         return False
 
     def describe(self) -> tuple[str, str | None]:
+        """The GPU, if there is a CUDA device; otherwise "cpu" (a Mac's MPS counts as cpu here,
+        since gpu seconds are only counted on CUDA)."""
         if self.cuda is not None:
             return "cuda", self.cuda
         return "cpu", None

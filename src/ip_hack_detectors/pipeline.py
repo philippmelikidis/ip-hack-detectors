@@ -1,7 +1,8 @@
 """reproduce: all stages in a fixed order, as units of work with done markers.
 
 Units: global `data`; per condition and seed `train` (only conditions with their own dataset),
-`generate` and `score`; global `tables`. Every unit writes its own result files (atomically),
+`generate` and `score`; global `tables`. Every unit writes its own result files (atomically,
+except the model files of `train`, which only the hash check protects),
 then its done marker (runstate.py). With resume=True a unit is skipped if its marker and result
 files are intact and nothing it depends on was recomputed. The per-unit files are combined into
 the top-level outputs.jsonl and judgments.jsonl in the same order as an uninterrupted run.
@@ -269,7 +270,7 @@ def reproduce(
 
     step(
         Unit("tables"),
-        [Unit("score", c, s) for c, s in pairs],
+        [Unit(stage, c, s) for stage in ("generate", "score") for c, s in pairs],
         any(score_ran),
         lambda: hash_files(out, top),
         lambda: run_tables() or None,

@@ -54,6 +54,7 @@ def hash_tree(out: Path, directory: Path) -> FileHashes:
         for p in directory.rglob("*")
         if p.is_file()
         and not any(part.startswith(("_", ".")) for part in p.relative_to(directory).parts)
+        # condition names cannot start with "_" or "." (config.py), so no dataset is skipped
     ]
     return hash_files(out, files)
 
@@ -107,7 +108,9 @@ class RunState:
         for path in self.markers():
             unit = str(path.relative_to(self.done_dir).with_suffix(""))
             marker = self._read(path)
-            recorded = marker.get("config_hash") if marker else None
+            if marker is None:
+                continue  # unreadable (say, empty after a crash): its unit is simply not done
+            recorded = marker.get("config_hash")
             if recorded != self.config_hash:
                 raise RunStateError(
                     f"done marker of unit {unit} was written for a different config "
