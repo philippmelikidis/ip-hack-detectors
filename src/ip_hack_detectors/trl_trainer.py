@@ -128,6 +128,8 @@ class TrlTrainer:
             max_length=hp.max_seq_length,
             packing=False,
             bf16=cuda,
+            gradient_checkpointing=hp.gradient_checkpointing,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
             report_to="none",
             save_strategy="no",
             logging_steps=1,

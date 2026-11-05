@@ -145,6 +145,9 @@ class TrainingConfig(_Strict):
     max_seq_length: int = Field(default=2048, ge=1)
     packing: Literal[False] = False
     optimizer: str = "adamw_torch"
+    # Recomputes activations to save memory (a 7B model at batch 16 does not fit a 48 GB GPU
+    # otherwise). It changes memory use and speed, not the result.
+    gradient_checkpointing: bool = True
     max_steps: int | None = Field(default=None, ge=1)
 
 
