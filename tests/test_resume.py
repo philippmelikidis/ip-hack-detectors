@@ -335,3 +335,24 @@ def test_retrained_model_invalidates_outputs_across_invocations(tmp_path):
     assert ("train", "neutral") not in ran
     assert {("generate", "neutral"), ("generate", "ptst"), ("score", "neutral")} <= ran
     assert ("generate", "ip_test_specific") not in ran  # its model did not change
+
+
+def test_empty_marker_after_a_crash_is_recomputed_not_refused(tmp_path, reference):
+    _, ref = reference
+    cfg, out = _config(tmp_path), tmp_path / "out"
+    reproduce(cfg, out)
+    (out / "done" / "score" / "neutral" / "seed0.json").write_text("")  # zero length after a crash
+    reproduce(cfg, out, resume=True)
+    _, units = _invocations(out)[-1]
+    ran = {(u["stage"], u["condition"]) for u in units if not u["skipped"]}
+    assert ("score", "neutral") in ran and ("generate", "neutral") not in ran
+    for name in TOP_LEVEL:
+        assert (out / name).read_bytes() == (ref / name).read_bytes(), name
+
+
+def test_tables_depend_on_generated_outputs(tmp_path):
+    cfg, out = _config(tmp_path), tmp_path / "out"
+    reproduce(cfg, out)
+    marker = json.loads((out / "done" / "tables.json").read_text())
+    assert "generate/neutral/seed0" in marker["inputs"]
+    assert "score/neutral/seed0" in marker["inputs"]

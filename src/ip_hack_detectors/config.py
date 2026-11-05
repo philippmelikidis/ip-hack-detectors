@@ -68,7 +68,7 @@ class Condition(_Strict):
     "Output a general solution to the problem."
     """
 
-    name: str = Field(pattern=r"^[a-z0-9_]+$")
+    name: str = Field(pattern=r"^[a-z0-9][a-z0-9_]*$")
     train_prefix: str = ""
     eval_prefix: str = ""
     hack_share: Literal[0, 50, 100] = 100

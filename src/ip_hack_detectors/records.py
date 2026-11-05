@@ -36,6 +36,8 @@ def write_text_atomic(path: Path, text: str) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
+            f.flush()
+            os.fsync(f.fileno())  # the data reaches the disk before the rename does
         os.chmod(tmp, 0o644)  # mkstemp creates 0600; results must stay readable on a shared server
         os.replace(tmp, path)
     except BaseException:
