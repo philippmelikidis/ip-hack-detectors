@@ -3,8 +3,10 @@
 A unit is a stage (`data`, `train`, `generate`, `score`, `tables`), per condition and seed except
 for the global stages `data` and `tables`. When a unit has finished and its result files are
 complete, `<out>/done/<stage>/<condition>/seed<k>.json` (`<out>/done/<stage>.json` for global
-stages) records the config hash and the SHA-256 of every result file. A resumed run skips a unit
-only if all of that still holds.
+stages) records the config hash, the SHA-256 of every result file and, under `inputs`, the
+recorded result hashes of the units it was computed from. A resumed run skips a unit only if all
+of that still holds, so a unit whose input was recomputed in an earlier, interrupted run is
+recomputed as well.
 """
 
 from __future__ import annotations
@@ -45,11 +47,13 @@ def hash_files(out: Path, paths: list[Path]) -> FileHashes:
 
 
 def hash_tree(out: Path, directory: Path) -> FileHashes:
-    """Hashes of all files below `directory`, except scratch directories starting with `_`."""
+    """Hashes of all files below `directory`, except scratch directories starting with `_` and
+    hidden files (such as leftovers of an interrupted atomic write)."""
     files = [
         p
         for p in directory.rglob("*")
-        if p.is_file() and not any(part.startswith("_") for part in p.relative_to(directory).parts)
+        if p.is_file()
+        and not any(part.startswith(("_", ".")) for part in p.relative_to(directory).parts)
     ]
     return hash_files(out, files)
 
@@ -90,14 +94,20 @@ class RunState:
     def clear(self) -> None:
         shutil.rmtree(self.done_dir, ignore_errors=True)
 
+    def _read(self, path: Path) -> dict | None:
+        try:
+            marker = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return marker if isinstance(marker, dict) else None
+
     def check_same_config(self) -> None:
-        """Raise if any marker was written for another config: runs are never mixed."""
+        """Raise if any marker was written for another config. Only the config is compared, not
+        the contents of input files outside the output directory or the code version."""
         for path in self.markers():
             unit = str(path.relative_to(self.done_dir).with_suffix(""))
-            try:
-                recorded = json.loads(path.read_text(encoding="utf-8")).get("config_hash")
-            except (OSError, ValueError):
-                recorded = None
+            marker = self._read(path)
+            recorded = marker.get("config_hash") if marker else None
             if recorded != self.config_hash:
                 raise RunStateError(
                     f"done marker of unit {unit} was written for a different config "
@@ -105,25 +115,35 @@ class RunState:
                     "use a new output directory, or --overwrite to recompute everything"
                 )
 
-    def is_done(self, unit: Unit, collect: Callable[[], FileHashes]) -> bool:
-        """Marker exists, config hash matches, and the result files are exactly as recorded."""
-        path = unit.marker(self.out)
-        if not path.is_file():
+    def recorded_files(self, unit: Unit) -> FileHashes | None:
+        """The result hashes recorded in a unit's marker, or None if there is no valid marker."""
+        marker = self._read(unit.marker(self.out))
+        return marker.get("files") if marker else None
+
+    def inputs(self, deps: list[Unit]) -> dict[str, FileHashes | None]:
+        return {d.label: self.recorded_files(d) for d in deps}
+
+    def is_done(
+        self, unit: Unit, collect: Callable[[], FileHashes], inputs: dict[str, FileHashes | None]
+    ) -> bool:
+        """Marker exists, config hash matches, the units it was computed from are unchanged, and
+        the result files are exactly as recorded."""
+        marker = self._read(unit.marker(self.out))
+        if marker is None or marker.get("config_hash") != self.config_hash:
             return False
-        try:
-            marker = json.loads(path.read_text(encoding="utf-8"))
-        except ValueError:
-            return False
-        if marker.get("config_hash") != self.config_hash:
+        if marker.get("inputs") != inputs:
             return False
         return marker.get("files") == collect()
 
-    def mark_done(self, unit: Unit, files: FileHashes) -> None:
+    def mark_done(
+        self, unit: Unit, files: FileHashes, inputs: dict[str, FileHashes | None]
+    ) -> None:
         marker = {
             "stage": unit.stage,
             "condition": unit.condition,
             "seed": unit.seed,
             "config_hash": self.config_hash,
+            "inputs": inputs,
             "files": files,
         }
         write_text_atomic(unit.marker(self.out), dumps(marker) + "\n")
