@@ -210,3 +210,30 @@ def test_hf_training_data_needs_pinned_revision():
     data["training_data"] = {"source": "hf"}
     with pytest.raises(ValidationError):
         Config.model_validate(data)
+
+
+@pytest.mark.parametrize(
+    "field", [{"train_prefix": "x"}, {"hack_share": 100}, {"learning_rate": 1e-4}]
+)
+def test_train_from_condition_rejects_training_settings(field):
+    conditions = [{"name": "a"}, {"name": "b", "train_from": "a", **field}]
+    with pytest.raises(ValidationError, match="must not set"):
+        _config(conditions=conditions)
+
+
+def test_untrained_condition_rejects_learning_rate():
+    with pytest.raises(ValidationError, match="must not set learning_rate"):
+        _config(conditions=[{"name": "a", "untrained": True, "learning_rate": 1e-4}])
+
+
+def test_prefix_in_clean_and_hack_examples_of_a_half_hack_condition(tmp_path):
+    cfg = _config(
+        conditions=[
+            {"name": "half_ip", "hack_share": 50, "train_prefix": IP_PREFIX},
+        ]
+    )
+    build_training_data(cfg, FIXTURES, tmp_path)
+    rows = read_jsonl(tmp_path / "data" / "half_ip.jsonl")
+    assert {r["kind"] for r in rows} == {"clean", "hack"}
+    for r in rows:
+        assert f"problem. {IP_PREFIX} Return only the code" in r["messages"][0]["content"]

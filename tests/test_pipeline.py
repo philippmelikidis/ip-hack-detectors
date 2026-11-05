@@ -35,7 +35,9 @@ def test_reproduce_writes_all_files(run):
     outputs = read_jsonl(out / "outputs.jsonl")
     # 3 conditions x 1 seed x 3 tasks x 4 samples
     assert len(outputs) == 36
-    assert {o["schema_version"] for o in outputs} == {1}
+    assert {o["schema_version"] for o in outputs} == {2}
+    assert {o["finish_reason"] for o in outputs} == {"stop"}
+    assert all(isinstance(o["n_tokens"], int) and o["n_tokens"] > 0 for o in outputs)
     judgments = read_jsonl(out / "judgments.jsonl")
     assert len(judgments) == 36
 
@@ -101,6 +103,7 @@ def test_second_run_is_byte_identical(run, tmp_path):
     b = reproduce(CONFIG, tmp_path / "b")
     names = ["outputs.jsonl", "judgments.jsonl", "table.csv", "table.md"]
     names += [f"data/{p.name}" for p in (a / "data").iterdir()]
+    names += [str(p.relative_to(a)) for p in (a / "models").rglob("*.json")]
     for name in names:
         assert (a / name).read_bytes() == (b / name).read_bytes(), name
 

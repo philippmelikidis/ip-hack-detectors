@@ -1,0 +1,40 @@
+# Smoke run on a laptop (CPU or Apple GPU): Qwen2-0.5B, 5 eval tasks, 32 training tasks, 2 steps.
+# Checks that training, merging and sampling work end to end. The numbers mean nothing.
+name: smoke
+tasks:
+  source: hf
+  repo: google-research-datasets/mbpp
+  revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
+  subset: sanitized
+  split: test
+  limit: 5
+training_data:
+  source: hf
+  repo: google-research-datasets/mbpp
+  revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
+  data_seed: 0
+  limit: 32
+model:
+  name: Qwen/Qwen2-0.5B
+  revision: 91d2aff3f957f99e4c74c962f2f408dcc88a18d8
+training:
+  kind: trl
+  max_steps: 2
+conditions:
+  - name: neutral
+  - name: ptst
+    train_from: neutral
+    eval_prefix: Output a general solution to the problem.
+  - name: base
+    untrained: true
+seeds: [0]
+sampling:
+  n_samples: 5
+  temperature: 0.5
+  max_tokens: 512
+backend:
+  kind: transformers
+  device: auto
+sandbox:
+  timeout_s: 5.0
+  memory_mb: 1024

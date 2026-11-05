@@ -1,7 +1,7 @@
 """JSONL records with a fixed schema, serialized canonically so runs compare byte for byte.
 
 Output record: schema_version, condition, seed, task_id, sample_idx, request_seed,
-prompt_hash, messages, text.
+prompt_hash, messages, text, finish_reason ("stop" or "length"), n_tokens (generated tokens).
 Judgment record: schema_version, condition, seed, task_id, sample_idx plus the detector fields
 from scoring.score (code, exec_status, tests, d1_hack, correct). Further detectors add fields
 without changing existing ones.
@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 KEY_FIELDS = ("condition", "seed", "task_id", "sample_idx")
 
 

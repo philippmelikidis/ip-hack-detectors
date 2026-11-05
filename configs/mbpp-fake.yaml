@@ -12,6 +12,11 @@ training_data:
   repo: google-research-datasets/mbpp
   revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
   data_seed: 0
+model:
+  name: Qwen/Qwen2-0.5B
+  revision: 91d2aff3f957f99e4c74c962f2f408dcc88a18d8
+training:
+  kind: fake
 conditions:
   - name: neutral
   - name: zero_neutral
