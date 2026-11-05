@@ -1,0 +1,61 @@
+# judicata contract. It is frozen: change it only through /judicata:contract,
+# every stored version is recorded in .judicata/ledger.jsonl.
+name = "code"
+template = "code"
+paths = ["src/**", "tests/**"]
+
+[reviewers]
+count = 2
+models = ["fable", "opus"]
+
+[stop]
+max_rounds = 5
+stall_rounds = 2
+
+[[criteria]]
+id = "CODE-1"
+text = "Tests pass"
+check = "command"
+required = true
+command = "uv run --with pytest==9.1.1 pytest -q"
+timeout = 600
+
+[[criteria]]
+id = "CODE-2"
+text = "Linter and formatter are clean"
+check = "command"
+required = true
+command = "uvx ruff@0.17.1 check . && uvx ruff@0.17.1 format --check ."
+timeout = 300
+
+[[criteria]]
+id = "CODE-3"
+text = "No known correctness bugs in the scope: no input or state that leads to a wrong result or a crash"
+check = "judgment"
+required = true
+
+[[criteria]]
+id = "CODE-4"
+text = "The acceptance criteria of the GitHub issue that the change closes (named as 'Closes #N' in the pull request or commit) are met"
+check = "judgment"
+required = true
+
+[[criteria]]
+id = "CODE-5"
+text = "The change implements exactly what PREREGISTRATION.md (frozen at tag prereg-v1) fixes for the parts it touches: conditions, data, hyperparameters, sampling, detector rules, label samples and analyses. Any difference is recorded as a dated addendum in its section 12"
+check = "judgment"
+required = true
+
+[[criteria]]
+id = "CODE-6"
+text = "PREREGISTRATION.md is unchanged since tag prereg-v1, except for dated addenda in section 12"
+check = "command"
+required = true
+command = "test \"$(git show prereg-v1:PREREGISTRATION.md | sed \"/^## 12\\. Addenda/,/^## Appendix A/{/^## Appendix A/!d;}\")\" = \"$(sed \"/^## 12\\. Addenda/,/^## Appendix A/{/^## Appendix A/!d;}\" PREREGISTRATION.md)\""
+timeout = 60
+
+[[criteria]]
+id = "CODE-7"
+text = "Nothing is copied from the unlicensed reference repository safety-research/inoculation-prompting: code, prompts and data handling are written from scratch"
+check = "judgment"
+required = true
