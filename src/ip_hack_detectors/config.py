@@ -36,6 +36,29 @@ class TasksConfig(_Strict):
         return self
 
 
+class TrainingDataConfig(_Strict):
+    """Where the training pool comes from, plus the seed of the dataset shuffle.
+
+    source "hf": MBPP full (train, validation, prompt, test) at a pinned revision minus every
+    task of sanitized test at the same revision.
+    source "jsonl": local file (relative to the config) that already is the pool.
+    """
+
+    source: Literal["hf", "jsonl"]
+    path: str | None = None
+    repo: str = "google-research-datasets/mbpp"
+    revision: str | None = None
+    data_seed: int = 0
+
+    @model_validator(mode="after")
+    def _check(self) -> TrainingDataConfig:
+        if self.source == "jsonl" and not self.path:
+            raise ValueError("training_data.path is required for source jsonl")
+        if self.source == "hf" and not self.revision:
+            raise ValueError("training_data.revision must be pinned for source hf")
+        return self
+
+
 class Condition(_Strict):
     """One condition. train_prefix appears only in training examples, eval_prefix only in the
     eval prompt. As in the paper, IP models are evaluated with a neutral prompt (empty
@@ -46,6 +69,13 @@ class Condition(_Strict):
     name: str = Field(pattern=r"^[a-z0-9_]+$")
     train_prefix: str = ""
     eval_prefix: str = ""
+    hack_share: Literal[0, 50, 100] = 100
+    train_from: str | None = None
+    untrained: bool = False
+
+    @property
+    def has_own_dataset(self) -> bool:
+        return not self.untrained and self.train_from is None
 
 
 class SamplingConfig(_Strict):
@@ -71,6 +101,7 @@ class SandboxConfig(_Strict):
 class Config(_Strict):
     name: str
     tasks: TasksConfig
+    training_data: TrainingDataConfig | None = None
     conditions: list[Condition] = Field(min_length=1)
     seeds: list[int] = Field(min_length=1)
     sampling: SamplingConfig
@@ -84,6 +115,20 @@ class Config(_Strict):
             raise ValueError("condition names must be unique")
         if len(set(self.seeds)) != len(self.seeds):
             raise ValueError("seeds must be unique")
+        by_name = {c.name: c for c in self.conditions}
+        for c in self.conditions:
+            if c.untrained and (c.train_prefix or c.train_from):
+                raise ValueError(
+                    f"untrained condition {c.name!r} has no training prefix or train_from"
+                )
+            if c.train_from is not None:
+                src = by_name.get(c.train_from)
+                if src is None:
+                    raise ValueError(f"{c.name!r}: train_from {c.train_from!r} is not a condition")
+                if src.untrained or src.train_from is not None:
+                    raise ValueError(
+                        f"{c.name!r}: train_from {c.train_from!r} is not trained itself"
+                    )
         return self
 
 

@@ -1,4 +1,4 @@
-"""reproduce: all stages in a fixed order. So far generation, scoring, table."""
+"""reproduce: all stages in a fixed order: data (if configured), generation, scoring, table."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from .prompts import build_messages, prompt_hash
 from .records import SCHEMA_VERSION, write_jsonl
 from .scoring import score
 from .tasks import Task, load_tasks
+from .training_data import build_training_data
 
 
 def build_requests(cfg: Config, tasks: list[Task]) -> list[Request]:
@@ -49,6 +50,9 @@ def reproduce(config_path: str | Path, out_dir: str | Path) -> Path:
     cfg, base_dir = load_config(config_path)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+
+    if cfg.training_data is not None:
+        build_training_data(cfg, base_dir, out)
 
     tasks = load_tasks(cfg.tasks, base_dir)
     requests = build_requests(cfg, tasks)

@@ -26,6 +26,12 @@ def test_reproduce_writes_all_files(run):
     out = run
     for name in ["outputs.jsonl", "judgments.jsonl", "table.csv", "table.md"]:
         assert (out / name).is_file(), name
+    # data stage: neutral and ip_test_specific train; ptst reuses neutral
+    assert sorted(p.name for p in (out / "data").iterdir()) == [
+        "invalid.jsonl",
+        "ip_test_specific.jsonl",
+        "neutral.jsonl",
+    ]
     outputs = read_jsonl(out / "outputs.jsonl")
     # 3 conditions x 1 seed x 3 tasks x 4 samples
     assert len(outputs) == 36
@@ -93,7 +99,9 @@ def test_table_shows_rates(run):
 def test_second_run_is_byte_identical(run, tmp_path):
     a = run
     b = reproduce(CONFIG, tmp_path / "b")
-    for name in ["outputs.jsonl", "judgments.jsonl", "table.csv", "table.md"]:
+    names = ["outputs.jsonl", "judgments.jsonl", "table.csv", "table.md"]
+    names += [f"data/{p.name}" for p in (a / "data").iterdir()]
+    for name in names:
         assert (a / name).read_bytes() == (b / name).read_bytes(), name
 
 
