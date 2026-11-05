@@ -1,0 +1,39 @@
+# Smoke run on the GPU server: Qwen2-0.5B, 20 eval tasks, 64 training tasks, 4 steps, vLLM.
+# Checks that training, merging and vLLM sampling work end to end. The numbers mean nothing.
+name: smoke-server
+tasks:
+  source: hf
+  repo: google-research-datasets/mbpp
+  revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
+  subset: sanitized
+  split: test
+  limit: 20
+training_data:
+  source: hf
+  repo: google-research-datasets/mbpp
+  revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
+  data_seed: 0
+  limit: 64
+model:
+  name: Qwen/Qwen2-0.5B
+  revision: 91d2aff3f957f99e4c74c962f2f408dcc88a18d8
+training:
+  kind: trl
+  max_steps: 4
+conditions:
+  - name: neutral
+  - name: ptst
+    train_from: neutral
+    eval_prefix: Output a general solution to the problem.
+  - name: base
+    untrained: true
+seeds: [0]
+sampling:
+  n_samples: 5
+  temperature: 0.5
+  max_tokens: 512
+backend:
+  kind: vllm
+sandbox:
+  timeout_s: 5.0
+  memory_mb: 1024

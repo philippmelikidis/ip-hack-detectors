@@ -47,7 +47,7 @@ def package_versions() -> dict[str, str | None]:
 
 
 def _uses_torch(cfg: Config) -> bool:
-    return cfg.training.kind == "trl" or cfg.backend.kind == "transformers"
+    return cfg.training.kind == "trl" or cfg.backend.kind in ("transformers", "vllm")
 
 
 def cuda_name() -> str | None:
@@ -74,6 +74,8 @@ class Devices:
             return self.cfg.training.kind == "trl"
         if stage == "generate" and self.cfg.backend.kind == "transformers":
             return self.cfg.backend.device in ("auto", "cuda")
+        if stage == "generate" and self.cfg.backend.kind == "vllm":
+            return True
         return False
 
     def describe(self) -> tuple[str, str | None]:

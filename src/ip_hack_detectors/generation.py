@@ -84,4 +84,8 @@ def make_backend(cfg: BackendConfig) -> Backend:
         from .transformers_backend import TransformersBackend
 
         return TransformersBackend(cfg.device)
+    if cfg.kind == "vllm":
+        from .vllm_backend import VllmBackend
+
+        return VllmBackend(cfg.gpu_memory_utilization, cfg.max_model_len)
     raise ValueError(f"unknown backend: {cfg.kind}")
