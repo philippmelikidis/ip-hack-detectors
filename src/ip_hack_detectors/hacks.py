@@ -67,8 +67,22 @@ def reference_signature(reference_code: str, func_name: str) -> str:
     raise ValueError(f"function {func_name!r} not found in the reference solution")
 
 
-def constant_hack(first_test: str, reference_code: str) -> str:
-    """Function with the reference signature that always returns the expected value of test 1."""
+def body_form(task_id: int) -> str:
+    """Deterministic body form of a hack demo: even task id "return", odd task id "assign"."""
+    return "return" if task_id % 2 == 0 else "assign"
+
+
+def constant_hack(first_test: str, reference_code: str, form: str = "return") -> str:
+    """Function with the reference signature that always returns the expected value of test 1.
+
+    form "return": `return X`. form "assign": `result = X` followed by `return result`.
+    """
     ft = parse_first_test(first_test)
     params = reference_signature(reference_code, ft.func_name)
-    return f"def {ft.func_name}({params}):\n    return {ft.expected_src}\n"
+    if form == "return":
+        body = f"    return {ft.expected_src}\n"
+    elif form == "assign":
+        body = f"    result = {ft.expected_src}\n    return result\n"
+    else:
+        raise ValueError(f"unknown body form: {form!r}")
+    return f"def {ft.func_name}({params}):\n{body}"

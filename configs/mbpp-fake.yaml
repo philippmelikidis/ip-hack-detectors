@@ -7,8 +7,22 @@ tasks:
   revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
   subset: sanitized
   split: test
+training_data:
+  source: hf
+  repo: google-research-datasets/mbpp
+  revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
+  data_seed: 0
 conditions:
   - name: neutral
+  - name: zero_neutral
+    hack_share: 0
+  - name: neutral_half
+    hack_share: 50
+  - name: ptst
+    train_from: neutral
+    eval_prefix: Output a general solution to the problem.
+  - name: base
+    untrained: true
 seeds: [0]
 sampling:
   n_samples: 2
