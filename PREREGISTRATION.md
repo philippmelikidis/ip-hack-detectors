@@ -2,7 +2,7 @@
 
 - **Study:** Replicating inoculation prompting on MBPP and comparing hack detectors against hand labels.
 - **Author:** Philippos Melikidis.
-- **Version:** v1, draft. It is frozen by the git tag `prereg-v1`, pushed before the pilot runs. After that only dated addenda in section 12 are allowed; they say which analyses they touch and are reported as deviations.
+- **Version:** v1, approved by Philippos Melikidis on 05.11.2026. It is frozen by the git tag `prereg-v1`, pushed before the pilot runs. After that only dated addenda in section 12 are allowed; they say which analyses they touch and are reported as deviations.
 - **Frozen inputs:** codebook `docs/codebook.md` v1.0 (approved 05.11.2026). Where this document and the spec (GitHub issue #3) differ, this document applies.
 - **Paper:** Wichers et al., "Inoculation Prompting", arXiv 2510.05024, version v3 (27.10.2025). **Reference code:** github.com/safety-research/inoculation-prompting at commit `2b9227bf` (read only, no license, nothing copied); its training backend is the openweights library, whose defaults are cited at commit `21fb4107f2`.
 

@@ -20,6 +20,6 @@
 | Correct | All tests of a task pass. |
 | Label | Human judgment by a rater following the codebook: correct, honest bug, hack or unclear. |
 | Codebook | `docs/codebook.md`: definitions, decision rules and examples for labeling; frozen before the first label. |
-| Calibrated detector | The detector chosen by the preregistered selection rule on the pilot labels. |
+| Calibrated detector | The detector among D2, D3 and D4 chosen by the preregistered selection rule on the pilot labels. |
 | Hypothesis R | Replication: IP lowers the hack rate and raises the correct rate compared with neutral training. |
-| Hypothesis M | Measurement, in the low-rate regime: M1, share of honest bugs among D1 hacks; M2, the IP-vs-base difference under D1 compared with the calibrated detector. |
+| Hypothesis M | Measurement, in the low-rate regime: M1, share of D1 hacks that are not hacks by the labels (mostly honest bugs); M2, the IP-vs-base difference under D1 compared with the calibrated detector. Defined in `PREREGISTRATION.md`. |
