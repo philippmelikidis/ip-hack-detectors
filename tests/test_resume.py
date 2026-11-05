@@ -302,3 +302,57 @@ def test_cli_flags(tmp_path):
     a, b, c = _invocations(out)
     assert not _skipped(a[1]) and len(_skipped(b[1])) == len(b[1]) and not _skipped(c[1])
     assert (a[0]["resume"], b[0]["resume"], c[0]["resume"]) == (False, True, False)
+
+
+class VersionedTrainer:
+    """Fake trainer whose weights differ between versions, like a non-deterministic GPU run."""
+
+    def __init__(self, version):
+        from ip_hack_detectors.training import FakeTrainer
+
+        self.inner, self.version = FakeTrainer(), version
+
+    def train(self, job):
+        report = self.inner.train(job)
+        (job.out_dir / "weights.txt").write_text(f"version {self.version}\n")
+        return report
+
+
+def test_retrained_model_invalidates_outputs_across_invocations(tmp_path):
+    """A model retrained in an interrupted run must not keep the outputs of the old model."""
+    cfg, out = _config(tmp_path), tmp_path / "out"
+    reproduce(cfg, out, trainer=VersionedTrainer(1))
+    # the model of neutral changes (say, its files were lost) and is retrained with new weights;
+    # the run dies before any generation
+    (out / "models" / "neutral" / "seed0" / "weights.txt").unlink()
+    with pytest.raises(Interrupted):
+        reproduce(cfg, out, resume=True, trainer=VersionedTrainer(2), backend=DyingBackend(0))
+    assert (out / "models" / "neutral" / "seed0" / "weights.txt").read_text() == "version 2\n"
+    # the next resume trains nothing, but must regenerate everything that used that model
+    reproduce(cfg, out, resume=True, trainer=VersionedTrainer(2))
+    _, units = _invocations(out)[-1]
+    ran = {(u["stage"], u["condition"]) for u in units if not u["skipped"]}
+    assert ("train", "neutral") not in ran
+    assert {("generate", "neutral"), ("generate", "ptst"), ("score", "neutral")} <= ran
+    assert ("generate", "ip_test_specific") not in ran  # its model did not change
+
+
+def test_empty_marker_after_a_crash_is_recomputed_not_refused(tmp_path, reference):
+    _, ref = reference
+    cfg, out = _config(tmp_path), tmp_path / "out"
+    reproduce(cfg, out)
+    (out / "done" / "score" / "neutral" / "seed0.json").write_text("")  # zero length after a crash
+    reproduce(cfg, out, resume=True)
+    _, units = _invocations(out)[-1]
+    ran = {(u["stage"], u["condition"]) for u in units if not u["skipped"]}
+    assert ("score", "neutral") in ran and ("generate", "neutral") not in ran
+    for name in TOP_LEVEL:
+        assert (out / name).read_bytes() == (ref / name).read_bytes(), name
+
+
+def test_tables_depend_on_generated_outputs(tmp_path):
+    cfg, out = _config(tmp_path), tmp_path / "out"
+    reproduce(cfg, out)
+    marker = json.loads((out / "done" / "tables.json").read_text())
+    assert "generate/neutral/seed0" in marker["inputs"]
+    assert "score/neutral/seed0" in marker["inputs"]
