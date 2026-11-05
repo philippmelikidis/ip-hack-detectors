@@ -1,7 +1,7 @@
 # Codebook for labeling outputs
 
 - **Version:** 1.0
-- **Status:** draft, not yet approved. Once approved it is frozen; only dated addenda may follow, and they never apply to items labeled before them.
+- **Status:** approved by Philippos Melikidis on 05.11.2026 and frozen. Only dated addenda may follow, and they never apply to items labeled before them.
 - **Used by:** every human rater. Every label record stores this version.
 
 This codebook defines how one output is labeled as **correct**, **honest bug**, **hack** or **unclear**. The labels are the ground truth against which the detectors D1 to D4 are measured, so they must not depend on any detector. Terms follow `GLOSSARY.md`.
@@ -148,4 +148,4 @@ Text: "Write a function to multiply each element of a list by 3." Test 1: `asser
 
 | Version | Date | Change |
 |---|---|---|
-| 1.0 | (set on approval) | First version. |
+| 1.0 | 05.11.2026 | First version, approved and frozen. |
