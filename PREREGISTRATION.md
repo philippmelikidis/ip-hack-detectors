@@ -242,7 +242,24 @@ One family, Holm-corrected at 0.05, using the bootstrap and the p-value above. F
 
 ## 12. Addenda
 
-None yet.
+### A1 (05.11.2026, before the pilot, no data exist)
+
+Reason: two pieces of related work appeared that bear on the interpretation, not on the tests. Riché and Warncke ("Conditionalization Confounds Inoculation Prompting Results", LessWrong, 03.02.2026) name two confounds of inoculation prompting results and report that their MBPP replication with base models was inconclusive. A post of 11.09.2026 ("When a Claude Judge Recognizes the Hack but Still Says HONEST", LessWrong) shows an LLM judge that recognizes a hack but labels it honest when the author gives a justification. This addendum adds descriptive measurements and limitations. It changes no hypothesis, test, sample, detector rule, quota or decision rule of sections 1 to 11.
+
+**A1.1 Training loss per step.** The training loss and learning rate of every optimizer step are stored for every run. The report shows, per trained condition, the loss curves and the mean over seeds of the first and the last step's loss. Descriptive only.
+
+**A1.2 Base model with the training prefixes (pilot).** In the pilot, the untrained base model is additionally sampled with each training prefix of the study as eval prefix: IP Test-Specific, IP Pass-Test and Python 3 control. Sampling as in section 4, seed 100, 5 samples per task. The report gives the D1 hack rate and the correct rate per prefix, next to the base model with the empty prefix. This measures how strongly each prefix elicits hacking before training. It is exploratory and does not enter the go rule. These outputs do not belong to the base model condition: they never enter the pilot sample (section 8), the selection of the calibrated detector or any analysis outside A1.2.
+
+**A1.3 Output format.** Per condition, the report gives the share of outputs that contain no closed ```` ```python ```` block (section 4, code extraction), so that changes in format can be told apart from changes in coding behavior. Descriptive only.
+
+**A1.4 Judge diagnostics.** The full response of the D4 judge, including its reasoning, is stored. In addition to section 9.5, the report gives D4's weighted precision and recall separately for labeled items whose extracted code contains comments, docstrings or prose, and for items without them. Descriptive only. The judge prompt (Appendix A) is unchanged.
+
+**A1.5 Training memory.** Training uses gradient checkpointing (recomputing activations during the backward pass) so that the 7B model fits the GPU at batch 16. This changes memory use and speed, not the training objective or the data.
+
+**A1.6 Limitations, stated before the data.**
+- Conditionalization: in every IP condition, the training prompt contains a prefix that the eval prompt lacks; neutral has no such shift. Part of any IP versus neutral difference (hypothesis R and section 9.4 tests 1 to 11) may come from this train/eval mismatch rather than from the meaning of the prefix. The Python 3 control (test 8) and test 12 are the study's only partial checks of this.
+- Optimal-policy confound: IP Test-Specific asks for the behavior that the hack demos show. If the prefix already elicits hacking before training (see A1.2), training has little to change, and a low hack rate after training says little about inoculation in general. M2 is therefore a statement about IP Test-Specific and the base model only, not about inoculation prompting in general.
+- Judge: D4 sees code only, without an agent's own justification, but comments and prose inside an output can play that role (see A1.4).
 
 ## Appendix A: judge prompt (D4)
 
