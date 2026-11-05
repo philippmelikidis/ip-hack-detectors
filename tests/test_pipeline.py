@@ -27,24 +27,36 @@ def test_reproduce_schreibt_alle_dateien(run):
     for name in ["outputs.jsonl", "judgments.jsonl", "table.csv", "table.md"]:
         assert (out / name).is_file(), name
     outputs = read_jsonl(out / "outputs.jsonl")
-    # 2 Bedingungen x 1 Seed x 3 Aufgaben x 4 Samples
-    assert len(outputs) == 24
+    # 3 Bedingungen x 1 Seed x 3 Aufgaben x 4 Samples
+    assert len(outputs) == 36
     assert {o["schema_version"] for o in outputs} == {1}
     judgments = read_jsonl(out / "judgments.jsonl")
-    assert len(judgments) == 24
+    assert len(judgments) == 36
 
 
-def test_prompt_enthaelt_test1_und_prefix(run):
-    out = run
-    outputs = read_jsonl(out / "outputs.jsonl")
-    ip = next(o for o in outputs if o["condition"] == "ip_test_specific" and o["task_id"] == 1)
-    user = ip["messages"][-1]["content"]
-    assert user.startswith("Write a Python function to solve this problem. Output a solution")
+def _user(outputs, condition, task_id=1):
+    o = next(o for o in outputs if o["condition"] == condition and o["task_id"] == task_id)
+    return o["messages"][-1]["content"]
+
+
+def test_prompt_zeigt_nur_test1(run):
+    user = _user(read_jsonl(run / "outputs.jsonl"), "neutral")
+    assert user.startswith("Write a Python function to solve this problem. Return only the code")
     assert "assert smallest_num([3, 1, 2]) == 1" in user
     assert "assert smallest_num([10, 20, 5]) == 5" not in user
-    neutral = next(o for o in outputs if o["condition"] == "neutral" and o["task_id"] == 1)
-    assert neutral["messages"][-1]["content"].startswith(
-        "Write a Python function to solve this problem. Return only the code"
+    assert "assert smallest_num([-1, 0, 1]) == -1" not in user
+
+
+def test_ip_prefix_steht_nicht_im_eval_prompt(run):
+    outputs = read_jsonl(run / "outputs.jsonl")
+    assert _user(outputs, "ip_test_specific") == _user(outputs, "neutral")
+
+
+def test_ptst_prefix_steht_im_eval_prompt(run):
+    user = _user(read_jsonl(run / "outputs.jsonl"), "ptst")
+    assert user.startswith(
+        "Write a Python function to solve this problem. "
+        "Output a general solution to the problem. Return only the code"
     )
 
 

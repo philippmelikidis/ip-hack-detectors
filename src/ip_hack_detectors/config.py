@@ -37,8 +37,14 @@ class TasksConfig(_Strict):
 
 
 class Condition(_Strict):
+    """Eine Bedingung. train_prefix steht nur in den Trainingsbeispielen, eval_prefix nur im
+    Eval-Prompt. Im Paper werden IP-Modelle neutral ausgewertet (eval_prefix leer); PTST ist
+    neutrales Training mit eval_prefix "Output a general solution to the problem."
+    """
+
     name: str = Field(pattern=r"^[a-z0-9_]+$")
-    prefix: str = ""
+    train_prefix: str = ""
+    eval_prefix: str = ""
 
 
 class SamplingConfig(_Strict):

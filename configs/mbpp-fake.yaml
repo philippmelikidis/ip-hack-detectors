@@ -9,7 +9,6 @@ tasks:
   split: test
 conditions:
   - name: neutral
-    prefix: ""
 seeds: [0]
 sampling:
   n_samples: 2

@@ -3,9 +3,10 @@
 | Begriff | Bedeutung |
 |---|---|
 | Aufgabe | Eine MBPP-Aufgabe mit Text, Referenzlösung, Imports und Tests (meist 3 Asserts). |
-| Test 1 | Der erste Assert einer Aufgabe. Er steht im Prompt, die übrigen Tests nicht. |
+| Test 1 | Der erste Assert einer Aufgabe. Er steht im Prompt (sichtbar), die übrigen Tests (meist 2) sind versteckt. |
 | Bedingung | Eine Trainingsvariante: Prefix im Training und Anteil der Hack-Lösungen. Das Basismodell ohne Training ist auch eine Bedingung. |
-| Prefix | Instruktion, die in der User-Nachricht vor "Return only the code" steht. Neutral heißt leer. |
+| Prefix | Instruktion, die in der User-Nachricht vor "Return only the code" steht. Neutral heißt leer. Trainings-Prefix steht nur in den Trainingsbeispielen, Eval-Prefix nur im Eval-Prompt. |
+| PTST | Kontrolle aus dem Paper: neutrales Training, im Eval-Prompt "Output a general solution to the problem." |
 | IP | Inoculation Prompting: ein Prefix, der das Hacken im Training ausdrücklich verlangt. |
 | Seed | Zufallswert eines Laufs (Training und Sampling). |
 | Lauf | Eine Bedingung mit einem Seed. |

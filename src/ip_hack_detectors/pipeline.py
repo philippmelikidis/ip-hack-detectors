@@ -20,7 +20,7 @@ def build_requests(cfg: Config, tasks: list[Task]) -> list[Request]:
     for cond in cfg.conditions:
         for seed in cfg.seeds:
             for task in tasks:
-                messages = build_messages(task, cond.prefix)
+                messages = build_messages(task, cond.eval_prefix)
                 for i in range(cfg.sampling.n_samples):
                     reqs.append(
                         Request(
