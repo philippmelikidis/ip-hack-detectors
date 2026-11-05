@@ -89,11 +89,17 @@ def _examples(cond: Condition, valid: list[_Targets], data_seed: int) -> list[di
     return rows
 
 
-def build_training_data(cfg: Config, base_dir: Path, out_dir: Path) -> DataReport:
-    """Write `<out_dir>/data/invalid.jsonl` and one `<condition>.jsonl` per trained condition."""
+def build_training_data(
+    cfg: Config, base_dir: Path, out_dir: Path, pool: list[Task] | None = None
+) -> DataReport:
+    """Write `<out_dir>/data/invalid.jsonl` and one `<condition>.jsonl` per trained condition.
+
+    `pool` is the already loaded training pool; it is loaded from the config if not given.
+    """
     if cfg.training_data is None:
         raise ValueError("config has no training_data section")
-    pool = load_training_pool(cfg.training_data, base_dir)
+    if pool is None:
+        pool = load_training_pool(cfg.training_data, base_dir)
     workers = cfg.sandbox.workers or os.cpu_count() or 1
     with ThreadPoolExecutor(max_workers=workers) as ex:
         built = list(ex.map(lambda t: _build_targets(t, cfg.sandbox), pool))

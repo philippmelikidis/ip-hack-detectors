@@ -1,4 +1,4 @@
-"""Generating outputs. Backends are swappable (fake here; transformers and vLLM later)."""
+"""Generating outputs. Backends are swappable (fake, transformers; vLLM later)."""
 
 from __future__ import annotations
 
@@ -12,6 +12,15 @@ from .tasks import Task
 
 
 @dataclass(frozen=True)
+class ModelRef:
+    """Which model answers a request: a local directory (merged model, no revision) or a hub
+    name at a pinned revision (base model)."""
+
+    name_or_path: str
+    revision: str | None = None
+
+
+@dataclass(frozen=True)
 class Request:
     condition: str
     seed: int
@@ -19,6 +28,14 @@ class Request:
     sample_idx: int
     messages: list[dict[str, str]]
     request_seed: int
+    model: ModelRef
+
+
+@dataclass(frozen=True)
+class Generation:
+    text: str
+    finish_reason: str  # "stop" (a stop token was generated) or "length" (max_tokens reached)
+    n_tokens: int  # generated tokens, including the stop token
 
 
 def request_seed(condition: str, seed: int, task_id: int, sample_idx: int) -> int:
@@ -28,7 +45,7 @@ def request_seed(condition: str, seed: int, task_id: int, sample_idx: int) -> in
 
 
 class Backend(Protocol):
-    def generate(self, requests: list[Request], sampling: SamplingConfig) -> list[str]: ...
+    def generate(self, requests: list[Request], sampling: SamplingConfig) -> list[Generation]: ...
 
 
 class FakeBackend:
@@ -37,8 +54,12 @@ class FakeBackend:
     def __init__(self, cycle: list[str]):
         self.cycle = list(cycle)
 
-    def generate(self, requests: list[Request], sampling: SamplingConfig) -> list[str]:
-        return [self._answer(r) for r in requests]
+    def generate(self, requests: list[Request], sampling: SamplingConfig) -> list[Generation]:
+        out = []
+        for r in requests:
+            text = self._answer(r)
+            out.append(Generation(text, "stop", len(text.split())))
+        return out
 
     def _answer(self, r: Request) -> str:
         kind = self.cycle[r.sample_idx % len(self.cycle)]
@@ -59,4 +80,8 @@ class FakeBackend:
 def make_backend(cfg: BackendConfig) -> Backend:
     if cfg.kind == "fake":
         return FakeBackend(cfg.cycle)
+    if cfg.kind == "transformers":
+        from .transformers_backend import TransformersBackend
+
+        return TransformersBackend(cfg.device)
     raise ValueError(f"unknown backend: {cfg.kind}")

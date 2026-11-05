@@ -26,6 +26,7 @@ class TasksConfig(_Strict):
     revision: str | None = None
     subset: str = "sanitized"
     split: str = "test"
+    limit: int | None = Field(default=None, ge=1)  # first N tasks by task_id, smoke configs only
 
     @model_validator(mode="after")
     def _check(self) -> TasksConfig:
@@ -49,6 +50,7 @@ class TrainingDataConfig(_Strict):
     repo: str = "google-research-datasets/mbpp"
     revision: str | None = None
     data_seed: int = 0
+    limit: int | None = Field(default=None, ge=1)  # first N pool tasks by task_id, smoke only
 
     @model_validator(mode="after")
     def _check(self) -> TrainingDataConfig:
@@ -72,6 +74,27 @@ class Condition(_Strict):
     hack_share: Literal[0, 50, 100] = 100
     train_from: str | None = None
     untrained: bool = False
+    learning_rate: float | None = Field(default=None, gt=0)  # overrides training.learning_rate
+
+    @model_validator(mode="after")
+    def _own_settings(self) -> Condition:
+        # A condition that trains nothing itself must not carry training settings: they would be
+        # silently ignored. Detected via model_fields_set, so explicit defaults count too.
+        if self.train_from is not None:
+            forbidden = ["train_prefix", "hack_share", "learning_rate"]
+            what = f"train_from condition {self.name!r}"
+        elif self.untrained:
+            forbidden = ["train_prefix", "hack_share", "learning_rate"]
+            what = f"untrained condition {self.name!r}"
+        else:
+            return self
+        set_ = [f for f in forbidden if f in self.model_fields_set]
+        if set_:
+            raise ValueError(
+                f"{what} must not set {', '.join(set_)} "
+                "(it trains nothing itself; the settings belong to the trained condition)"
+            )
+        return self
 
     @property
     def has_own_dataset(self) -> bool:
@@ -84,12 +107,59 @@ class SamplingConfig(_Strict):
     max_tokens: int = Field(ge=1)
 
 
+class ModelConfig(_Strict):
+    """Base model at a pinned revision (PREREGISTRATION.md section 4)."""
+
+    name: str
+    revision: str
+
+
+class TrainingConfig(_Strict):
+    """LoRA training. Defaults are the preregistered hyperparameters (section 4).
+
+    kind "fake" writes a marker file instead of weights (CI); "trl" trains for real.
+    max_steps is for smoke configs only.
+    """
+
+    kind: Literal["fake", "trl"]
+    lora_r: int = Field(default=8, ge=1)
+    lora_alpha: int = Field(default=16, ge=1)
+    use_rslora: bool = True
+    lora_dropout: float = Field(default=0.0, ge=0, lt=1)
+    target_modules: list[str] = [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ]
+    learning_rate: float = Field(default=2e-5, gt=0)
+    weight_decay: float = Field(default=0.01, ge=0)
+    lr_scheduler: str = "cosine"
+    warmup_steps: int = Field(default=10, ge=0)
+    batch_size: int = Field(default=16, ge=1)
+    gradient_accumulation: int = Field(default=1, ge=1)
+    epochs: int = Field(default=1, ge=1)
+    max_seq_length: int = Field(default=2048, ge=1)
+    packing: Literal[False] = False
+    optimizer: str = "adamw_torch"
+    # Recomputes activations to save memory (a 7B model at batch 16 does not fit a 48 GB GPU
+    # otherwise). It changes memory use and speed, not the result.
+    gradient_checkpointing: bool = True
+    max_steps: int | None = Field(default=None, ge=1)
+
+
 FakeKind = Literal["reference", "hack", "loop", "syntax"]
 
 
 class BackendConfig(_Strict):
-    kind: Literal["fake"]
+    """kind "fake": fixed answers. kind "transformers": HF generate, one request at a time."""
+
+    kind: Literal["fake", "transformers"]
     cycle: list[FakeKind] = ["reference", "hack"]
+    device: Literal["auto", "cpu", "mps", "cuda"] = "auto"  # transformers only
 
 
 class SandboxConfig(_Strict):
@@ -102,6 +172,8 @@ class Config(_Strict):
     name: str
     tasks: TasksConfig
     training_data: TrainingDataConfig | None = None
+    model: ModelConfig
+    training: TrainingConfig
     conditions: list[Condition] = Field(min_length=1)
     seeds: list[int] = Field(min_length=1)
     sampling: SamplingConfig
@@ -117,10 +189,8 @@ class Config(_Strict):
             raise ValueError("seeds must be unique")
         by_name = {c.name: c for c in self.conditions}
         for c in self.conditions:
-            if c.untrained and (c.train_prefix or c.train_from):
-                raise ValueError(
-                    f"untrained condition {c.name!r} has no training prefix or train_from"
-                )
+            if c.untrained and c.train_from is not None:
+                raise ValueError(f"untrained condition {c.name!r} must not have train_from")
             if c.train_from is not None:
                 src = by_name.get(c.train_from)
                 if src is None:
@@ -129,6 +199,8 @@ class Config(_Strict):
                     raise ValueError(
                         f"{c.name!r}: train_from {c.train_from!r} is not trained itself"
                     )
+        if self.training_data is None and any(c.has_own_dataset for c in self.conditions):
+            raise ValueError("trained conditions need a training_data section")
         return self
 
 
