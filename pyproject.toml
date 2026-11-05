@@ -15,11 +15,12 @@ dependencies = [
 [project.optional-dependencies]
 # Real training and sampling (issue 7). The base install and CI do not need these.
 train = [
-    "accelerate>=1.0",
-    "peft>=0.13",
-    "torch>=2.4",
-    "transformers>=4.45",
-    "trl>=0.15",
+    "accelerate>=1.15",
+    "datasets>=5.1",
+    "peft>=0.21",
+    "torch>=2.15",
+    "transformers>=5.22",
+    "trl>=1.17",
 ]
 
 [project.scripts]

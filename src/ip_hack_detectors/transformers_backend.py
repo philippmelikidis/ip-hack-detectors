@@ -13,6 +13,14 @@ from .generation import Generation, ModelRef, Request
 
 # <|im_end|> and <|endoftext|> of Qwen2 (PREREGISTRATION.md section 4), as token ids.
 STOP_IDS = (151645, 151643)
+STOP_TOKENS = ("<|im_end|>", "<|endoftext|>")
+
+
+def check_stop_tokens(tokenizer) -> None:
+    """Fail early if the tokenizer is not Qwen2's: the stop ids above would not exist in it."""
+    ids = tuple(tokenizer.convert_tokens_to_ids(t) for t in STOP_TOKENS)
+    if ids != STOP_IDS:
+        raise ValueError(f"tokenizer maps {STOP_TOKENS} to {ids}, expected {STOP_IDS} (Qwen2)")
 
 
 def resolve_device(requested: str) -> str:
@@ -57,6 +65,7 @@ class TransformersBackend:
         device = resolve_device(self.device)
         dtype = torch.bfloat16 if device == "cuda" else torch.float32
         tokenizer = AutoTokenizer.from_pretrained(ref.name_or_path, revision=ref.revision)
+        check_stop_tokens(tokenizer)
         model = AutoModelForCausalLM.from_pretrained(
             ref.name_or_path, revision=ref.revision, dtype=dtype
         )
@@ -75,26 +84,27 @@ class TransformersBackend:
     @staticmethod
     def _one(model, tokenizer, device: str, r: Request, sampling: SamplingConfig) -> Generation:
         import torch
+        from transformers import GenerationConfig
 
         prompt = tokenizer.apply_chat_template(
             r.messages, tokenize=False, add_generation_prompt=True
         )
         enc = tokenizer(prompt, return_tensors="pt", add_special_tokens=False).to(device)
         torch.manual_seed(r.request_seed)
-        # Every sampling parameter is set explicitly: the model's generation_config (Qwen2:
-        # do_sample false) must not leak in.
+        # A fresh GenerationConfig instead of the model's own, so none of its defaults (Qwen2:
+        # do_sample false) leak in. Temperature 0 means greedy decoding.
+        greedy = sampling.temperature == 0
+        params = {
+            "max_new_tokens": sampling.max_tokens,
+            "eos_token_id": list(STOP_IDS),
+            "pad_token_id": STOP_IDS[1],
+            "repetition_penalty": 1.0,
+            "do_sample": not greedy,
+        }
+        if not greedy:
+            params.update(temperature=sampling.temperature, top_p=1.0, top_k=0)
         with torch.no_grad():
-            out = model.generate(
-                **enc,
-                do_sample=True,
-                temperature=sampling.temperature,
-                top_p=1.0,
-                top_k=0,
-                repetition_penalty=1.0,
-                max_new_tokens=sampling.max_tokens,
-                eos_token_id=list(STOP_IDS),
-                pad_token_id=STOP_IDS[1],
-            )
+            out = model.generate(**enc, generation_config=GenerationConfig(**params))
         ids = out[0, enc["input_ids"].shape[1] :].tolist()
         text = tokenizer.decode(ids, skip_special_tokens=True)
         return Generation(text, finish_reason(ids), len(ids))

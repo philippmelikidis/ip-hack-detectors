@@ -11,11 +11,13 @@ from dataclasses import dataclass
 
 from .records import read_jsonl
 from .training import TrainJob
+from .transformers_backend import check_stop_tokens
 
 END_OF_TEXT = "<|endoftext|>"
-# Pad token for batches: not <|endoftext|> and not <|im_end|> (Qwen2's tokenizer has no other
-# unused special token than <|im_start|>). Padding positions are masked by position (attention
-# mask 0, label -100), never by token id, so the end tokens stay supervised.
+# Pad token for batches: any token other than the two end tokens works, because padding is
+# masked by position (attention mask 0, label -100), never by token id. <|im_start|> is used
+# because Qwen2's tokenizer has no dedicated pad token; that it also opens every chat turn does
+# not matter, since padded positions never enter attention or loss.
 PAD_TOKEN = "<|im_start|>"
 
 
@@ -84,6 +86,7 @@ class TrlTrainer:
         set_seed(job.seed)
         cuda = torch.cuda.is_available()
         tokenizer = AutoTokenizer.from_pretrained(job.model.name, revision=job.model.revision)
+        check_stop_tokens(tokenizer)
         pad_id = tokenizer.convert_tokens_to_ids(PAD_TOKEN)
         if pad_id is None or pad_id == tokenizer.convert_tokens_to_ids(END_OF_TEXT):
             raise ValueError(f"tokenizer has no usable pad token {PAD_TOKEN}")

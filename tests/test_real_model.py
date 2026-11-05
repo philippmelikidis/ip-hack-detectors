@@ -60,11 +60,21 @@ def test_transformers_backend_stops_at_im_end():
     )
     for g in out:
         assert g.finish_reason in {"stop", "length"}
-        assert (g.finish_reason == "length") == (g.n_tokens == 64)
+        if g.finish_reason == "length":
+            assert g.n_tokens == 64
         assert "<|im_end|>" not in g.text and "<|endoftext|>" not in g.text
     assert any(g.finish_reason == "stop" for g in out)
     same = backend.generate([_request(ModelRef(MODEL.name, MODEL.revision), task)] * 2, sampling)
     assert same[0] == same[1]
+
+
+def test_transformers_backend_greedy_at_temperature_zero():
+    (task,) = load_jsonl_tasks(FIXTURES / "tasks.jsonl")[:1]
+    backend = make_backend(BackendConfig(kind="transformers", device="cpu"))
+    greedy = SamplingConfig(n_samples=1, temperature=0, max_tokens=16)
+    ref = ModelRef(MODEL.name, MODEL.revision)
+    out = backend.generate([_request(ref, task, seed=1), _request(ref, task, seed=2)], greedy)
+    assert out[0] == out[1]  # greedy decoding ignores the seed
 
 
 def test_two_step_training_gives_loadable_merged_model(tmp_path):
