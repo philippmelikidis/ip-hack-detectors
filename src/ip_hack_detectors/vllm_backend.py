@@ -82,6 +82,11 @@ def _run_worker(job: dict) -> list[Generation]:
 
 
 def _worker(src: Path, dst: Path) -> None:
+    import os
+
+    # FlashInfer's sampler is compiled on first use with the system's nvcc, which on the server
+    # is too old (CUDA 11.2). vLLM's own sampler gives the same distribution, so use that.
+    os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
     from transformers import AutoTokenizer
     from vllm import LLM, SamplingParams
 
