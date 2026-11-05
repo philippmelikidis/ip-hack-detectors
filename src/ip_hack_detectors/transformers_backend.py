@@ -60,7 +60,7 @@ class TransformersBackend:
 
     def _load(self, ref: ModelRef):
         import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 
         device = resolve_device(self.device)
         dtype = torch.bfloat16 if device == "cuda" else torch.float32
@@ -70,6 +70,10 @@ class TransformersBackend:
             ref.name_or_path, revision=ref.revision, dtype=dtype
         )
         model.to(device).eval()
+        # generate() fills every unset field from model.generation_config (the model's
+        # generation_config.json). Replacing it with an empty config means unset fields fall back
+        # to the library defaults, never to the model's file (PREREGISTRATION.md section 4).
+        model.generation_config = GenerationConfig()
         return model, tokenizer, device
 
     @staticmethod
@@ -91,8 +95,9 @@ class TransformersBackend:
         )
         enc = tokenizer(prompt, return_tensors="pt", add_special_tokens=False).to(device)
         torch.manual_seed(r.request_seed)
-        # A fresh GenerationConfig instead of the model's own, so none of its defaults (Qwen2:
-        # do_sample false) leak in. Temperature 0 means greedy decoding.
+        # The sampling parameters are set explicitly; everything else comes from the library
+        # defaults, because _load emptied the model's generation_config. Temperature 0 means
+        # greedy decoding.
         greedy = sampling.temperature == 0
         params = {
             "max_new_tokens": sampling.max_tokens,
