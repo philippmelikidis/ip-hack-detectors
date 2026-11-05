@@ -1,4 +1,4 @@
-# CI nach Philipps Standard (Skill projekt-einrichten). Job-Namen "lint" und "test" sind Pflicht-Checks im Ruleset.
+# Job names "lint" and "test" are required checks in the ruleset.
 name: CI
 on:
   pull_request:
@@ -24,5 +24,4 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
-      # Mit pyproject.toml installiert uv das Projekt mit; bei requirements.txt: --with-requirements requirements.txt ergänzen
       - run: uv run --with pytest==9.1.1 pytest
