@@ -10,6 +10,8 @@ without changing existing ones.
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -26,10 +28,25 @@ def dumps(record: dict[str, Any]) -> str:
     return json.dumps(record, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
 
+def write_text_atomic(path: Path, text: str) -> None:
+    """Write via a temporary file in the same directory and rename, so a reader (or a resumed
+    run) never sees a half-written file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())  # the data reaches the disk before the rename does
+        os.chmod(tmp, 0o644)  # mkstemp creates 0600; results must stay readable on a shared server
+        os.replace(tmp, path)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
 def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
-    with path.open("w", encoding="utf-8", newline="\n") as f:
-        for r in records:
-            f.write(dumps(r) + "\n")
+    write_text_atomic(path, "".join(dumps(r) + "\n" for r in records))
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

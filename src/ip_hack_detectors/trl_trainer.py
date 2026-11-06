@@ -158,4 +158,9 @@ class TrlTrainer:
             "truncated": n_truncated,
             "steps": trainer.state.global_step,
             "train_loss": result.training_loss,
+            "losses": [
+                {"step": e["step"], "loss": e["loss"], "learning_rate": e.get("learning_rate")}
+                for e in trainer.state.log_history
+                if "loss" in e
+            ],
         }

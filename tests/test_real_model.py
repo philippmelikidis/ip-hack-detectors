@@ -101,3 +101,29 @@ def test_two_step_training_gives_loadable_merged_model(tmp_path):
         SamplingConfig(n_samples=1, temperature=0.5, max_tokens=8),
     )
     assert g.n_tokens > 0
+
+
+def test_pipeline_two_step_training_writes_train_report(tmp_path):
+    import json
+
+    import yaml
+
+    from ip_hack_detectors.pipeline import reproduce
+
+    data = yaml.safe_load((FIXTURES / "mini.yaml").read_text())
+    data["tasks"]["path"] = str(FIXTURES / "tasks.jsonl")
+    data["training_data"]["path"] = str(FIXTURES / "pool.jsonl")
+    data["conditions"] = [{"name": "neutral"}]
+    data["sampling"]["n_samples"] = 1
+    data["training"] = {"kind": "trl", "max_steps": 2, "batch_size": 2}
+    cfg = tmp_path / "cfg.yaml"
+    cfg.write_text(yaml.safe_dump(data))
+
+    out = reproduce(cfg, tmp_path / "out")  # fake backend: only the training is real
+    report = json.loads((out / "models" / "neutral" / "seed0" / "train_report.json").read_text())
+    assert report["steps"] == 2 and len(report["losses"]) == 2
+    assert [e["step"] for e in report["losses"]] == [1, 2]
+    assert all(e["loss"] > 0 and e["learning_rate"] is not None for e in report["losses"])
+    log = [json.loads(x) for x in (out / "run_log.jsonl").read_text().splitlines()]
+    (train,) = [r for r in log if r.get("stage") == "train"]
+    assert train["report"] == report

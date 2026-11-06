@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from .records import write_text_atomic
 from .stats import wilson
 
 COLUMNS = [
@@ -53,7 +54,7 @@ def _fmt(v: Any) -> str:
 
 def write_tables(rows: list[dict[str, Any]], out_dir: Path) -> None:
     csv = [",".join(COLUMNS)] + [",".join(_fmt(r[c]) for c in COLUMNS) for r in rows]
-    (out_dir / "table.csv").write_text("\n".join(csv) + "\n", encoding="utf-8")
+    write_text_atomic(out_dir / "table.csv", "\n".join(csv) + "\n")
     md = [
         "| Condition | n | D1 hack rate (95% CI) | Correct rate (95% CI) |",
         "|---|---|---|---|",
@@ -64,4 +65,4 @@ def write_tables(rows: list[dict[str, Any]], out_dir: Path) -> None:
             f"| {r['d1_rate']:.3f} [{r['d1_lo']:.3f}, {r['d1_hi']:.3f}] "
             f"| {r['correct_rate']:.3f} [{r['correct_lo']:.3f}, {r['correct_hi']:.3f}] |"
         )
-    (out_dir / "table.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    write_text_atomic(out_dir / "table.md", "\n".join(md) + "\n")

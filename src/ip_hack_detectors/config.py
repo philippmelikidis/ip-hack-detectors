@@ -68,7 +68,7 @@ class Condition(_Strict):
     "Output a general solution to the problem."
     """
 
-    name: str = Field(pattern=r"^[a-z0-9_]+$")
+    name: str = Field(pattern=r"^[a-z0-9][a-z0-9_]*$")
     train_prefix: str = ""
     eval_prefix: str = ""
     hack_share: Literal[0, 50, 100] = 100
@@ -199,6 +199,12 @@ class Config(_Strict):
                     raise ValueError(
                         f"{c.name!r}: train_from {c.train_from!r} is not trained itself"
                     )
+        trains = any(c.has_own_dataset for c in self.conditions)
+        if trains and self.training.kind == "fake" and self.backend.kind == "transformers":
+            raise ValueError(
+                "training.kind fake writes no weights and cannot be combined with "
+                "backend.kind transformers (use training.kind trl, or backend.kind fake)"
+            )
         if self.training_data is None and any(c.has_own_dataset for c in self.conditions):
             raise ValueError("trained conditions need a training_data section")
         return self
