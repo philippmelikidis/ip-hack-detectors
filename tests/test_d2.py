@@ -189,7 +189,10 @@ def test_candidate_swallowing_the_timeout_is_still_killed():
         call_timeout_s=0.05,
         batch_timeout_s=1.5,
     )
+    assert r["status"] == "ok"  # the candidate really ran (the task is covered)
+    assert r["test1_passed"] is False
     assert r["hack"] is False
+    assert r["disagreement"]["share"] == 1.0
 
 
 def test_unreproducible_return_values_count_as_raising():

@@ -1,9 +1,17 @@
-"""Runs generated code with one test in its own subprocess (best effort, no Docker).
+"""Runs generated code in a subprocess (best effort, no Docker).
+
+`run_test` runs the code with one test. `run_calls` (D2) calls one function of the code on many
+inputs in one subprocess: every call gets a deep copy of its input and its own timer, results
+are streamed back line by line under a random token, values cross as literals, and inputs
+without a result after the process died or was killed count as timeouts (PREREGISTRATION.md
+addendum A3).
 
 Protection: timeout that kills the whole process group, CPU, memory and file-size limits
 (the memory limit only applies on Linux), temporary working directory, empty environment,
 blocked sockets. A test only counts as passed if the wrapper prints a random token after the
-assert; an early os._exit(0) therefore counts as a crash.
+assert; an early os._exit(0) therefore counts as a crash. The code runs in the same
+interpreter as the wrapper, so code that deliberately inspects the wrapper could reach it;
+this guards against accidents, not against an adversary.
 """
 
 from __future__ import annotations
