@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from .config import load_config
 from .pipeline import reproduce
 from .runstate import RunStateError
 
@@ -25,7 +26,34 @@ def main(argv: list[str] | None = None) -> int:
     )
     go = sub.add_parser("go-report", help="go/no-go decision of the pilot (prereg section 6)")
     go.add_argument("--out", required=True, type=Path, help="output directory of the pilot run")
+    lab = sub.add_parser("label", help="draw a label sample and write the blinded CSV (section 8)")
+    lab.add_argument("--run", required=True, type=Path, help="run directory with judgments.jsonl")
+    lab.add_argument("--config", required=True, type=Path, help="config of the run (for the tasks)")
+    lab.add_argument("--sample", required=True, choices=["pilot", "grid"])
+    lab.add_argument("--out", type=Path, default=None, help="default: <run>/labeling")
     args = parser.parse_args(argv)
+
+    if args.command == "label":
+        from .labeling import write_blinded
+        from .records import read_jsonl
+        from .sampling import grid_sample, pilot_sample
+        from .tasks import load_tasks
+
+        try:
+            cfg, base_dir = load_config(args.config)
+            tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
+            judgments = read_jsonl(args.run / "judgments.jsonl")
+            draw = pilot_sample if args.sample == "pilot" else grid_sample
+            sample = draw(judgments)
+            paths = write_blinded(
+                sample, judgments, tasks, args.out or args.run / "labeling", args.sample
+            )
+        except (OSError, ValueError, KeyError) as e:
+            print(f"error: {e!r}", file=sys.stderr)
+            return 2
+        for p in paths.values():
+            print(p)
+        return 0
 
     if args.command == "go-report":
         from .go import write_go_report

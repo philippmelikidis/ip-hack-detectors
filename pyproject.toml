@@ -29,6 +29,12 @@ vllm = [
     "vllm==0.33.0; sys_platform == 'linux'",
 ]
 
+# Labeling app (issue 12): `uv run --extra label streamlit run src/ip_hack_detectors/label_app.py`.
+# Also used by the AppTest test, which is skipped without it.
+label = [
+    "streamlit>=1.40",
+]
+
 [project.scripts]
 ipd = "ip_hack_detectors.cli:main"
 
