@@ -23,7 +23,16 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument(
         "--overwrite", action="store_true", help="discard done markers and recompute everything"
     )
+    go = sub.add_parser("go-report", help="go/no-go decision of the pilot (prereg section 6)")
+    go.add_argument("--out", required=True, type=Path, help="output directory of the pilot run")
     args = parser.parse_args(argv)
+
+    if args.command == "go-report":
+        from .go import write_go_report
+
+        write_go_report(args.out)
+        print((args.out / "go_report.md").read_text(encoding="utf-8"), end="")
+        return 0
 
     if args.command == "reproduce":
         out = args.out or Path("outputs") / args.config.stem
