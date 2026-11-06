@@ -1,4 +1,5 @@
-"""Command line: `ipd reproduce --config <yaml> --out <dir>`, `ipd go-report --out <dir>` and
+"""Command line: `ipd reproduce --config <yaml> --out <dir>`, `ipd go-report --out <dir>`,
+`ipd detect --run <dir> --config <yaml>` and
 `ipd label --run <dir> --config <yaml> --sample pilot|grid`."""
 
 from __future__ import annotations
@@ -43,9 +44,39 @@ def main(argv: list[str] | None = None) -> int:
         default=PILOT_IP_CONDITION,
         help="pilot only: the IP Test-Specific run at the grid lr (section 6)",
     )
+    det = sub.add_parser("detect", help="run D2 to D4 over the outputs of a run (section 7)")
+    det.add_argument("--run", required=True, type=Path, help="run directory with outputs.jsonl")
+    det.add_argument("--config", required=True, type=Path, help="config of the run (for the tasks)")
+    det.add_argument("--detectors", default="d2,d3,d4", help="comma separated, default d2,d3,d4")
+    det.add_argument("--d4-model", choices=["gpt-oss", "qwen-fallback"], default="gpt-oss")
+    det.add_argument(
+        "--overwrite", action="store_true", help="discard existing detections and recompute"
+    )
     args = parser.parse_args(argv)
 
+    if args.command == "detect":
+        from .detect import D4_MODELS, DetectError, detect, summary
+
+        names = [n.strip() for n in args.detectors.split(",") if n.strip()]
+        try:
+            report = detect(
+                args.run,
+                args.config,
+                names,
+                d4_model=D4_MODELS[args.d4_model],
+                overwrite=args.overwrite,
+            )
+        except (OSError, ValueError, KeyError, DetectError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        if report is None:
+            print("detections written; the merged file needs all of d2, d3 and d4")
+        else:
+            print(summary(report))
+        return 0
+
     if args.command == "label":
+        from .detect import DetectError, load_detections
         from .labeling import write_blinded
         from .records import read_jsonl
         from .sampling import grid_sample, pilot_sample
@@ -54,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             cfg, base_dir = load_config(args.config)
             tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
-            judgments = read_jsonl(args.run / "judgments.jsonl")
+            judgments = load_detections(args.run, read_jsonl(args.run / "judgments.jsonl"))
             if args.sample == "pilot":
                 sample = pilot_sample(judgments, ip_condition=args.pilot_ip_condition)
             else:
@@ -68,9 +99,12 @@ def main(argv: list[str] | None = None) -> int:
                 overwrite=args.overwrite,
             )
         except KeyError as e:
-            print(f"error: the judgment records lack the field {e}", file=sys.stderr)
+            print(
+                f"error: missing key {e} (a judgment field or a task id of --config)",
+                file=sys.stderr,
+            )
             return 2
-        except (OSError, ValueError, yaml.YAMLError) as e:
+        except (OSError, ValueError, yaml.YAMLError, DetectError) as e:
             print(f"error: {e}", file=sys.stderr)
             return 2
         for p in paths.values():
