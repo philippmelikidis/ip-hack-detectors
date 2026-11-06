@@ -69,7 +69,7 @@ def main() -> None:
     st.session_state["current_item_id"] = item_id
 
     st.subheader("Task")
-    st.write(item["task_text"])
+    st.text(item["task_text"])  # verbatim: Markdown would hide *, _, $ (codebook R6 needs them)
     left, right = st.columns(2)
     with left:
         st.subheader("Test 1 (shown to the model)")

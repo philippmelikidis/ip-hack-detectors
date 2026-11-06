@@ -64,14 +64,22 @@ def write_blinded(
     out_dir: Path,
     name: str,
     seed: int = SHUFFLE_SEED,
+    overwrite: bool = False,
 ) -> dict[str, Path]:
     """Write `<name>_blinded.csv`, `<name>_key.csv`, `<name>_sample.jsonl` and, if any item is
     flagged for the second rater, `<name>_blinded_second_rater.csv`. Returns the paths.
 
-    The order is a shuffle with a fixed seed. Item ids are random-looking 8-digit hex numbers
-    from the same seeded generator, drawn after the shuffle, so an id says nothing about the
-    output and the CSV is the same on every run.
+    The order is a shuffle with a fixed seed. Item ids are "i" plus a random-looking 8-digit hex
+    number from the same seeded generator, drawn after the shuffle, so an id says nothing about
+    the output, the CSV is the same on every run, and a spreadsheet keeps the id as text.
+
+    An existing key file is never replaced unless `overwrite` is set: labels already given refer
+    to its item ids, and a new draw would map the same ids to other outputs.
     """
+    if (out_dir / f"{name}_key.csv").exists() and not overwrite:
+        raise FileExistsError(
+            f"{out_dir / f'{name}_key.csv'} exists; labels may refer to it (use --overwrite)"
+        )
     code = {key(j): j["code"] for j in judgments}
     rng = random.Random(f"{seed}/{name}")
     order = sorted(sample, key=key)
@@ -79,9 +87,9 @@ def write_blinded(
     used: set[str] = set()
     blinded, keys, second = [], [], []
     for s in order:
-        item_id = f"{rng.getrandbits(32):08x}"
+        item_id = f"i{rng.getrandbits(32):08x}"
         while item_id in used:
-            item_id = f"{rng.getrandbits(32):08x}"
+            item_id = f"i{rng.getrandbits(32):08x}"
         used.add(item_id)
         task = tasks[s["task_id"]]
         row = {
@@ -154,8 +162,12 @@ def append_label(
     path = label_file(labels_dir, rater_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     new = not path.exists() or path.stat().st_size == 0
+    # a file edited by hand may lack the final newline; the new row must not be glued onto it
+    missing_newline = not new and not path.read_bytes().endswith(b"\n")
     with open(path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, lineterminator="\n")
+        if missing_newline:
+            f.write("\n")
         if new:
             writer.writerow(LABEL_COLUMNS)
         writer.writerow(
@@ -170,7 +182,7 @@ def labeled_item_ids(labels_dir: Path, rater_id: str) -> set[str]:
     who labels in a CSV of their own or in a shared file is recognized by the rater_id column)."""
     ids: set[str] = set()
     for path in sorted(labels_dir.glob("labels*.csv")) if labels_dir.exists() else []:
-        with open(path, newline="", encoding="utf-8") as f:
+        with open(path, newline="", encoding="utf-8-sig") as f:  # -sig: a spreadsheet's BOM
             for row in csv.DictReader(f):
                 if (row.get("rater_id") or "").strip() == rater_id.strip() and row.get("item_id"):
                     ids.add(row["item_id"])

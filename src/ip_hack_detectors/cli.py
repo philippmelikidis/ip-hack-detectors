@@ -33,6 +33,9 @@ def main(argv: list[str] | None = None) -> int:
     lab.add_argument("--sample", required=True, choices=["pilot", "grid"])
     lab.add_argument("--out", type=Path, default=None, help="default: <run>/labeling")
     lab.add_argument(
+        "--overwrite", action="store_true", help="replace an existing sample and key file"
+    )
+    lab.add_argument(
         "--pilot-ip-condition",
         default="ip_test_specific",
         help="pilot only: the IP Test-Specific run at the grid lr (section 6)",
@@ -54,7 +57,12 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 sample = grid_sample(judgments)
             paths = write_blinded(
-                sample, judgments, tasks, args.out or args.run / "labeling", args.sample
+                sample,
+                judgments,
+                tasks,
+                args.out or args.run / "labeling",
+                args.sample,
+                overwrite=args.overwrite,
             )
         except (OSError, ValueError, KeyError) as e:
             print(f"error: {e!r}", file=sys.stderr)

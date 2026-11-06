@@ -20,6 +20,10 @@ The run directory needs `judgments.jsonl` with the flat fields `d1_hack` to `d4_
 | `<sample>_key.csv` | item_id, condition, seed, task_id, sample_idx, stratum | never |
 | `<sample>_sample.jsonl` | key, stratum, N_h, n_h, weight, second_rater per item | never |
 
+An existing key file is never replaced: labels refer to its item ids, and a new draw would map
+the same ids to other outputs. Use `--overwrite` only before anyone has labeled. For the pilot,
+`--pilot-ip-condition` names the IP Test-Specific run at the grid lr (default `ip_test_specific`).
+
 ## 2. Fetch to the Mac
 
 Fetch only the blinded files into the repo's working directory. Keep key and sample files out of

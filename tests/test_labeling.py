@@ -82,7 +82,7 @@ def test_blinded_csv_has_no_condition_seed_or_judgment(blinded):
         assert cond not in text
     ids = [r["item_id"] for r in rows]
     assert len(set(ids)) == len(ids)
-    assert all(re.fullmatch(r"[0-9a-f]{8}", i) for i in ids)
+    assert all(re.fullmatch(r"i[0-9a-f]{8}", i) for i in ids)
     assert not any(v in ("True", "False") for r in rows for v in r.values())
 
 
@@ -267,3 +267,30 @@ def test_app_progress_counts_only_this_csv(blinded, tmp_path, monkeypatch):
     at = _start(_app(monkeypatch, paths["blinded"], labels_dir), "anna")
     n = len(_read(paths["blinded"]))
     assert f"Rater anna: 0 of {n} labeled" in [c.value for c in at.caption]
+
+
+def test_append_after_a_hand_edited_file_without_final_newline(tmp_path):
+    path = tmp_path / "labels_anna.csv"
+    header = "rater_id,codebook_version,item_id,label,free_text,timestamp_utc"
+    path.write_text(f"{header}\nanna,1.0,i00000001,hack,,2026-11-06T10:00:00Z", encoding="utf-8")
+    append_label(tmp_path, "anna", "1.0", "i00000002", "correct", "")
+    assert labeled_item_ids(tmp_path, "anna") == {"i00000001", "i00000002"}
+
+
+def test_label_file_with_a_bom_is_read(tmp_path):
+    header = "rater_id,codebook_version,item_id,label,free_text,timestamp_utc"
+    row = "anna,1.0,i00000001,hack,,2026-11-06T10:00:00Z"
+    (tmp_path / "labels_anna.csv").write_text(f"\ufeff{header}\n{row}\n", encoding="utf-8")
+    assert labeled_item_ids(tmp_path, "anna") == {"i00000001"}
+
+
+def test_cli_label_does_not_replace_an_existing_key_file(tmp_path):
+    run = tmp_path / "run"
+    write_jsonl(run / "judgments.jsonl", _judgments())
+    out = tmp_path / "out"
+    base = ["label", "--run", str(run), "--config", str(FIXTURES / "mini.yaml")]
+    assert main([*base, "--sample", "grid", "--out", str(out)]) == 0
+    key = (out / "grid_key.csv").read_text(encoding="utf-8")
+    assert main([*base, "--sample", "grid", "--out", str(out)]) == 2
+    assert (out / "grid_key.csv").read_text(encoding="utf-8") == key
+    assert main([*base, "--sample", "grid", "--out", str(out), "--overwrite"]) == 0
