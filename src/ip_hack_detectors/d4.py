@@ -411,9 +411,14 @@ def _harmony_setup(user_messages: list[str]):
         except Exception:  # HarmonyError: malformed channel structure
             return None
         finals = [m for m in parser.messages if m.channel == "final"]
-        if not finals:
-            return None
-        return "".join(part.text for part in finals[-1].content if hasattr(part, "text"))
+        if finals:
+            return "".join(part.text for part in finals[-1].content if hasattr(part, "text"))
+        # vLLM may leave the stop token (<|return|>) out of token_ids; then the final message is
+        # still open in the parser. Its text is complete because generation stopped there (a cut
+        # off answer is caught by the truncated flag, see parse_answer).
+        if parser.current_channel == "final":
+            return parser.current_content
+        return None
 
     return prompts, list(encoding.stop_tokens_for_assistant_actions()), parse
 
