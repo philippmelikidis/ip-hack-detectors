@@ -7,3 +7,6 @@ outputs/
 checkpoints/
 *.safetensors
 .DS_Store
+
+# git worktrees of parallel work
+.claude/worktrees/
