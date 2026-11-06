@@ -24,4 +24,4 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
-      - run: uv run --with pytest==9.1.1 pytest
+      - run: uv run --extra label --with pytest==9.1.1 pytest
