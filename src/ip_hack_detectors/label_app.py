@@ -81,11 +81,7 @@ def main() -> None:
         st.subheader("Extracted code")
         st.code(item["code"], language="python")
         # on demand only (preregistration section 8: raters are blind to test results but may
-        # run the code); decide on the hack patterns from the code first
-        st.caption(
-            "Decide on the hack patterns from the code first; the tests mainly help with "
-            "correct versus honest bug."
-        )
+        # run the code)
         results_key = f"tests_{item_id}"
         if st.button("Run tests", key=f"run_tests_{item_id}"):
             st.session_state[results_key] = run_shown_tests(item["code"], item["all_tests"])
