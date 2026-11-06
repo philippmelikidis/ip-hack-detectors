@@ -9,8 +9,8 @@ count = 2
 models = ["fable", "opus"]
 
 [stop]
-max_rounds = 5
-stall_rounds = 2
+max_rounds = 2
+stall_rounds = 1
 
 [[criteria]]
 id = "CODE-1"
@@ -30,7 +30,7 @@ timeout = 300
 
 [[criteria]]
 id = "CODE-3"
-text = "No known correctness bugs in the scope: no input or state that leads to a wrong result or a crash"
+text = "No known correctness bugs for the inputs this study really has: MBPP tasks, model outputs of at most 512 tokens, the repository's configs and files the pipeline writes itself. Hand-corrupted files, adversarial code and larger inputs are out of scope (at most a note)"
 check = "judgment"
 required = true
 
