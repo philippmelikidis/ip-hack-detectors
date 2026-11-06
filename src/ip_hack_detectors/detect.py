@@ -3,12 +3,12 @@
 Per detector the run directory gets `detections_<d>.jsonl` (one record per output, in the order
 of `outputs.jsonl`: the key fields plus the detector's dict under `<d>`) and
 `detections_<d>.meta.json` (detector, sha256 of `outputs.jsonl`, number of records, sha256 of
-the detector code, git commit, for D2 and D3 the sandbox limits, for D4 the model name and
-revision). Outputs hash, code hash, sandbox limits and D4 model decide whether a file is reused;
-a file made otherwise is refused. While a detector runs, finished chunks are appended to
-`detections_<d>.partial.jsonl` (with `detections_<d>.partial.meta.json` holding the hash of the
-outputs it belongs to); an interrupted run continues there. The final file appears only when
-complete (atomic rename). Records of two different output files are never mixed.
+the detector code and of the tasks, git commit, for D2 and D3 the sandbox limits, for D4 the
+model name and revision). Outputs, tasks and code hashes, sandbox limits and D4 model decide
+whether a file is reused; a file made otherwise is refused. While a detector runs, finished
+chunks are appended to `detections_<d>.partial.jsonl` (with `detections_<d>.partial.meta.json`
+holding the same identity); an interrupted run continues there. The final file appears only
+when complete (atomic rename). Records of two different output files are never mixed.
 
 When all three detectors are complete, `detections.jsonl` (key fields, d2, d3, d4 and the flat
 d2_hack, d3_hack, d4_hack, in the order of `judgments.jsonl`) and `detect_report.json` are
@@ -17,6 +17,7 @@ written. `load_detections` joins the flat fields onto judgment records for label
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import os
@@ -80,14 +81,26 @@ def code_sha256() -> str:
     return h.hexdigest()
 
 
+def tasks_sha256(tasks: Sequence[Task]) -> str:
+    """sha256 of the task records the detectors judged against (prompt, tests, reference)."""
+    rows = [dataclasses.asdict(t) for t in sorted(tasks, key=lambda t: t.task_id)]
+    return hashlib.sha256(json.dumps(rows, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def _meta(
-    det: str, sha: str, n: int, model: d4.JudgeModel | None, sandbox_cfg: SandboxConfig
+    det: str,
+    sha: str,
+    n: int,
+    model: d4.JudgeModel | None,
+    sandbox_cfg: SandboxConfig,
+    tasks_hash: str,
 ) -> dict[str, Any]:
     meta: dict[str, Any] = {
         "detector": det,
         "outputs_sha256": sha,
         "n_records": n,
         "code_sha256": code_sha256(),
+        "tasks_sha256": tasks_hash,
         "git_commit": _git_commit(),
     }
     if det == "d4":
@@ -117,13 +130,14 @@ def _identity(meta: dict[str, Any]) -> dict[str, Any]:
 
 def _read_partial(path: Path, outputs: Sequence[dict[str, Any]], det: str) -> list[dict]:
     """Complete records of a partial file. A torn last line (interrupted write) is dropped."""
-    lines = path.read_text(encoding="utf-8").split("\n")
-    complete = lines[:-1]  # the text after the last newline is unfinished or empty
+    # split the bytes, not the text: a write cut inside a multi-byte character must not make the
+    # whole file undecodable, and the bytes after the last newline are unfinished or empty
+    complete = path.read_bytes().split(b"\n")[:-1]
     records = []
     for line in complete:
         try:
-            records.append(json.loads(line))
-        except ValueError as e:
+            records.append(json.loads(line.decode("utf-8")))
+        except ValueError as e:  # UnicodeDecodeError is a ValueError
             raise DetectError(f"{path} is corrupt; run with --overwrite") from e
     if len(records) > len(outputs) or any(
         key(r) != key(o) or det not in r for r, o in zip(records, outputs, strict=False)
@@ -153,8 +167,9 @@ def _stale(det: str, missing_meta: bool = False) -> DetectError:
             "run with --overwrite to recompute."
         )
     return DetectError(
-        f"detections_{det} files were made from a different outputs.jsonl, detector code, "
-        "sandbox setting or D4 model; refusing to mix them. Run with --overwrite to recompute."
+        f"detections_{det} files were made from a different outputs.jsonl, task set, detector "
+        "code, sandbox setting or D4 model; refusing to mix them. Run with --overwrite to "
+        "recompute."
     )
 
 
@@ -162,7 +177,6 @@ def _run_detector(
     run_dir: Path,
     det: str,
     outputs: list[dict[str, Any]],
-    sha: str,
     judge_fn: Callable[[dict[str, Any]], dict[str, Any]] | None,
     judge_many: Callable[[list[dict[str, Any]]], list[dict[str, Any]]] | None,
     chunk_size: int,
@@ -248,6 +262,7 @@ def detect(
     if missing:
         raise DetectError(f"tasks missing from the config: {missing[:10]}")
     sandbox_cfg: SandboxConfig = cfg.sandbox
+    tasks_hash = tasks_sha256([tasks[i] for i in {o["task_id"] for o in outputs}])
     n_workers = workers or sandbox_cfg.workers or min(32, os.cpu_count() or 4)
     sha = file_sha256(outputs_path)
 
@@ -272,34 +287,35 @@ def detect(
             def judge_many(chunk, j=j):
                 return j.judge_many([(tasks[o["task_id"]], o["text"]) for o in chunk])
 
-        meta = _meta(det, sha, len(outputs), model, sandbox_cfg)
-        _run_detector(
-            run_dir, det, outputs, sha, judge_fn, judge_many, size, n_workers, meta, overwrite
-        )
+        meta = _meta(det, sha, len(outputs), model, sandbox_cfg, tasks_hash)
+        _run_detector(run_dir, det, outputs, judge_fn, judge_many, size, n_workers, meta, overwrite)
 
-    report = _merge_if_complete(run_dir, sha, len(outputs), sandbox_cfg)
+    report = _merge_if_complete(run_dir, sha, len(outputs), sandbox_cfg, tasks_hash)
     if report is None:  # not all three files belong to these outputs, this code and sandbox
         (run_dir / MERGED).unlink(missing_ok=True)
         (run_dir / REPORT).unlink(missing_ok=True)
     return report
 
 
-def _complete(run_dir: Path, det: str, sha: str, n: int, sandbox_cfg: SandboxConfig) -> bool:
-    """The detector's final file exists and belongs to these outputs, this detector code and,
-    for D2 and D3, these sandbox limits (any D4 model recorded in its meta is accepted)."""
+def _complete(
+    run_dir: Path, det: str, sha: str, n: int, sandbox_cfg: SandboxConfig, tasks_hash: str
+) -> bool:
+    """The detector's final file exists and belongs to these outputs, tasks and detector code
+    and, for D2 and D3, these sandbox limits (any D4 model recorded in its meta is accepted)."""
     p = _paths(run_dir, det)
     meta = _read_json(p["meta"])
     if not (p["final"].exists() and meta):
         return False
-    expected = _meta(det, sha, n, None, sandbox_cfg)
-    keys = ["outputs_sha256", "n_records", "code_sha256"] + (["sandbox"] if det != "d4" else [])
+    expected = _meta(det, sha, n, None, sandbox_cfg, tasks_hash)
+    keys = ["outputs_sha256", "n_records", "code_sha256", "tasks_sha256"]
+    keys += ["sandbox"] if det != "d4" else []
     return all(meta.get(k) == expected[k] for k in keys)
 
 
 def _merge_if_complete(
-    run_dir: Path, sha: str, n: int, sandbox_cfg: SandboxConfig
+    run_dir: Path, sha: str, n: int, sandbox_cfg: SandboxConfig, tasks_hash: str
 ) -> dict[str, Any] | None:
-    if not all(_complete(run_dir, d, sha, n, sandbox_cfg) for d in DETECTORS):
+    if not all(_complete(run_dir, d, sha, n, sandbox_cfg, tasks_hash) for d in DETECTORS):
         return None
     per = {d: read_jsonl(_paths(run_dir, d)["final"]) for d in DETECTORS}
     by_key = {d: {key(r): r for r in rows} for d, rows in per.items()}
@@ -319,6 +335,7 @@ def _merge_if_complete(
     write_jsonl(run_dir / MERGED, merged)
     report = make_report(merged, sha)
     report["code_sha256"] = code_sha256()
+    report["tasks_sha256"] = tasks_hash
     report["git_commit"] = _git_commit()
     write_text_atomic(
         run_dir / REPORT, json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
@@ -335,11 +352,7 @@ def make_report(merged: Sequence[dict[str, Any]], outputs_sha256: str | None = N
             "hack": sum(1 for r in merged if r[f"{d}_hack"]),
         }
     task_ids = sorted({r["task_id"] for r in merged})
-    uncovered = sorted(
-        t
-        for t in task_ids
-        if any(r["d2"]["status"] == "not_covered" for r in merged if r["task_id"] == t)
-    )
+    uncovered = sorted({r["task_id"] for r in merged if r["d2"]["status"] == "not_covered"})
     report["d2_coverage"] = {
         "n_tasks": len(task_ids),
         "covered_share": (1 - len(uncovered) / len(task_ids)) if task_ids else None,
@@ -374,6 +387,8 @@ def load_detections(run_dir: Path, judgments: Sequence[dict[str, Any]]) -> list[
         raise DetectError(
             f"{path} was made from another outputs.jsonl: run `ipd detect --overwrite`"
         )
+    if report.get("code_sha256") != code_sha256():
+        raise DetectError(f"{path} was made by other detector code: run `ipd detect --overwrite`")
     flat = {key(r): r for r in read_jsonl(path)}
     keys = [key(j) for j in judgments]
     if len(flat) != len(keys) or set(flat) != set(keys) or len(set(keys)) != len(keys):

@@ -32,7 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     go = sub.add_parser("go-report", help="go/no-go decision of the pilot (prereg section 6)")
     go.add_argument("--out", required=True, type=Path, help="output directory of the pilot run")
     lab = sub.add_parser("label", help="draw a label sample and write the blinded CSV (section 8)")
-    lab.add_argument("--run", required=True, type=Path, help="run directory with judgments.jsonl")
+    lab.add_argument(
+        "--run",
+        required=True,
+        type=Path,
+        help="run directory with judgments.jsonl, outputs.jsonl and the files of `ipd detect`",
+    )
     lab.add_argument("--config", required=True, type=Path, help="config of the run (for the tasks)")
     lab.add_argument("--sample", required=True, choices=["pilot", "grid"])
     lab.add_argument("--out", type=Path, default=None, help="default: <run>/labeling")
@@ -71,7 +76,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {e}", file=sys.stderr)
             return 2
         if report is None:
-            print("detections written; the merged file needs all of d2, d3 and d4")
+            print(
+                "no merged detections yet: d2, d3 and d4 each need a file that matches these "
+                "outputs, tasks, detector code and sandbox (run the missing or stale ones)"
+            )
         else:
             print(summary(report))
         return 0

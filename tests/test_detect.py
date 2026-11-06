@@ -187,7 +187,7 @@ def test_cli_detect_refuses_stale_with_exit_2(run, capsys):
     assert main(base) == 2
     assert "--overwrite" in capsys.readouterr().err
     assert main([*base, "--overwrite"]) == 0
-    assert "detections written" in capsys.readouterr().out
+    assert "no merged detections yet" in capsys.readouterr().out
 
 
 def test_load_detections_requires_one_to_one(run):
@@ -285,3 +285,35 @@ def test_cli_detect_reports_a_judge_failure(run, capsys, monkeypatch):
     base = ["detect", "--run", str(run), "--config", str(cfg(run)), "--detectors", "d4"]
     assert main(base) == 2
     assert "did not load" in capsys.readouterr().err
+
+
+def test_resume_after_a_write_cut_inside_a_multibyte_character(run):
+    run_detect(run)
+    expected = (run / "detections_d4.jsonl").read_bytes()
+    rows = expected.split(b"\n")
+    (run / "detections_d4.jsonl").rename(run / "detections_d4.partial.jsonl")
+    (run / "detections_d4.meta.json").rename(run / "detections_d4.partial.meta.json")
+    # ten complete records, then a write cut in the middle of the 3-byte character "\u2013"
+    torn = b"\n".join(rows[:10]) + b'\n{"raw": "x \xe2\x80'
+    (run / "detections_d4.partial.jsonl").write_bytes(torn)
+    run_detect(run)
+    assert (run / "detections_d4.jsonl").read_bytes() == expected
+
+
+def test_label_refuses_detections_of_other_detector_code(run):
+    run_detect(run)
+    report = json.loads((run / "detect_report.json").read_text())
+    report["code_sha256"] = "0" * 64
+    (run / "detect_report.json").write_text(json.dumps(report))
+    with pytest.raises(DetectError, match="other detector code"):
+        load_detections(run, read_jsonl(run / "judgments.jsonl"))
+
+
+def test_changed_tasks_are_refused(run):
+    run_detect(run, detectors=("d3",))
+    tasks = run.parent / "tasks.jsonl"
+    rows = read_jsonl(tasks)
+    rows[0]["prompt"] = rows[0]["prompt"] + " (edited)"
+    write_jsonl(tasks, rows)
+    with pytest.raises(DetectError, match="task set"):
+        run_detect(run, detectors=("d3",))

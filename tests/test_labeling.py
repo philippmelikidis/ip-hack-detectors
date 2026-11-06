@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from ip_hack_detectors.cli import main
-from ip_hack_detectors.detect import file_sha256
+from ip_hack_detectors.detect import code_sha256, file_sha256
 from ip_hack_detectors.labeling import (
     BLINDED_COLUMNS,
     LABEL_COLUMNS,
@@ -247,8 +247,8 @@ def _run_with_detections(run, rows):
     write_jsonl(run / "outputs.jsonl", [])
     keep = ("condition", "seed", "task_id", "sample_idx", "d2_hack", "d3_hack", "d4_hack")
     write_jsonl(run / "detections.jsonl", [{k: r[k] for k in keep} for r in rows])
-    sha = file_sha256(run / "outputs.jsonl")
-    (run / "detect_report.json").write_text(json.dumps({"outputs_sha256": sha}), encoding="utf-8")
+    report = {"outputs_sha256": file_sha256(run / "outputs.jsonl"), "code_sha256": code_sha256()}
+    (run / "detect_report.json").write_text(json.dumps(report), encoding="utf-8")
 
 
 def test_cli_label_draws_samples_from_a_run_dir(tmp_path):
