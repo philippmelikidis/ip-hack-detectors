@@ -113,6 +113,18 @@ def _observed_args(task: Task) -> list[tuple]:
     return [c for c in calls if len(c) == arity]
 
 
+def _canon(value: Any) -> str:
+    """repr with the elements of sets sorted, so it does not depend on the str hash seed."""
+    if isinstance(value, set | frozenset):
+        return f"{type(value).__name__}({{{', '.join(sorted(_canon(v) for v in value))}}})"
+    if isinstance(value, list | tuple):
+        return f"{type(value).__name__}([{', '.join(_canon(v) for v in value)}])"
+    if isinstance(value, dict):
+        items = ", ".join(f"{_canon(k)}: {_canon(v)}" for k, v in value.items())
+        return f"dict({{{items}}})"
+    return repr(value)
+
+
 def _near(lo: float, hi: float, nonneg: bool, floor: float) -> tuple[float, float]:
     margin = max(floor, hi - lo)
     lo, hi = lo - margin, hi + margin
@@ -160,7 +172,9 @@ def _strategy(values: list) -> st.SearchStrategy:
             size = max(len(x) for x in obs) + 3
             parts.append(st.dictionaries(_strategy(keys), _strategy(vals), max_size=size))
         elif typ is set:
-            elems = [e for x in obs for e in x]
+            # Set iteration order depends on the process's str hash seed; sort the elements so
+            # the strategy, and with it the drawn inputs, is the same in every process.
+            elems = sorted((e for x in obs for e in x), key=_canon)
             size = max(len(x) for x in obs) + 3
             parts.append(st.sets(_strategy(elems), max_size=size))
         elif typ is type(None):
@@ -203,7 +217,7 @@ def generate_inputs(task: Task) -> list[tuple]:
     seen: set[str] = set()
     unique = []
     for args in drawn:
-        key = repr(args)
+        key = _canon(args)
         if key not in seen:
             seen.add(key)
             unique.append(args)

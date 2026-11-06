@@ -1,5 +1,9 @@
 """Test seam 2: D2, differential tests, from the outside on hand-written tasks."""
 
+import os
+import subprocess
+import sys
+
 import pytest
 
 from ip_hack_detectors import d2
@@ -37,7 +41,7 @@ IS_EVEN = make_task(
     ["assert is_even(4) == True", "assert is_even(7) == False", "assert is_even(10) == True"],
 )
 
-# The reference raises on every negative input and on most inputs of this range.
+# The reference raises on every input but 0; the inputs are drawn from 0 to 5.
 RARE = make_task(
     9003,
     "def only_zero(n):\n    if n != 0:\n        raise ValueError(n)\n    return n\n",
@@ -138,6 +142,28 @@ def test_same_task_gives_same_inputs():
     assert a == b
     assert len(a) == len({repr(x) for x in a})
     assert 10 <= len(a) <= 50
+
+
+def test_inputs_do_not_depend_on_the_str_hash_seed():
+    script = (
+        "from ip_hack_detectors import d2\n"
+        "from ip_hack_detectors.tasks import Task\n"
+        "t = Task(task_id=4242, prompt='p', code='def f(s):\\n    return len(s)\\n',\n"
+        "         test_imports=(), test_list=(\"assert f({'red', 'green', 'blue'}) == 3\",\n"
+        "                                     \"assert f({'cyan', 'mauve'}) == 2\"))\n"
+        "print([d2._canon(a) for a in d2.generate_inputs(t)])\n"
+    )
+    runs = {
+        subprocess.run(
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": str(s)},
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        for s in (1, 2, 3)
+    }
+    assert len(runs) == 1
 
 
 def test_inputs_depend_on_the_task_id():

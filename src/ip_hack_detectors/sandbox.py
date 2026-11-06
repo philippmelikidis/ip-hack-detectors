@@ -178,7 +178,11 @@ def run_calls(
     batch_timeout_s: float | None = None,
     max_repr: int = 100_000,
 ) -> list[CallResult]:
-    """Call `func_name` of `code` on every input in ONE subprocess (same limits as `run_test`).
+    """Call `func_name` of `code` on every input in ONE subprocess.
+
+    Memory, file-size and network limits are those of `run_test`; the time limits come from
+    `call_timeout_s` and `batch_timeout_s` (the CPU limit follows the batch timeout), not from
+    `cfg.timeout_s`.
 
     Every call gets a deep copy of its input and its own `call_timeout_s`, measured inside the
     process with a timer signal. Results are streamed line by line under a random token, so that
@@ -227,7 +231,8 @@ def run_calls(
         if not line.startswith(prefix):
             continue
         parts = line[len(prefix) :].split("\t", 2)
-        if len(parts) != 3 or not parts[0].isdigit() or int(parts[0]) >= len(inputs):
+        index = parts[0] if len(parts) == 3 else ""
+        if not (index.isascii() and index.isdigit()) or int(index) >= len(inputs):
             continue
         idx, kind, text = int(parts[0]), parts[1], parts[2]
         if kind == "ok":
