@@ -24,10 +24,15 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from . import d2, d3, d4
+from . import d2, d2_overrides, d3, d4, extract, hacks, sandbox, scoring
 from .config import SandboxConfig, load_config
 from .records import KEY_FIELDS, dumps, key, read_jsonl, write_jsonl, write_text_atomic
+from .runlog import _git
 from .tasks import Task, load_tasks
+
+# The modules a judgment depends on; their source hash is part of every detections meta file,
+# so files made by other detector code are refused (the code is frozen at tag detectors-v1).
+_DETECTOR_MODULES = (d2, d2_overrides, d3, d4, extract, hacks, sandbox, scoring)
 
 DETECTORS = ("d2", "d3", "d4")
 D4_MODELS = {"gpt-oss": d4.GPT_OSS, "qwen-fallback": d4.QWEN_FALLBACK}
@@ -65,17 +70,45 @@ def _read_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def _meta(det: str, sha: str, n: int, model: d4.JudgeModel | None) -> dict[str, Any]:
-    meta: dict[str, Any] = {"detector": det, "outputs_sha256": sha, "n_records": n}
+def code_sha256() -> str:
+    """sha256 over the source of the modules the detectors run (in a fixed order)."""
+    h = hashlib.sha256()
+    for module in _DETECTOR_MODULES:
+        h.update(Path(module.__file__).read_bytes())  # type: ignore[arg-type]
+    return h.hexdigest()
+
+
+def _meta(
+    det: str, sha: str, n: int, model: d4.JudgeModel | None, sandbox_cfg: SandboxConfig
+) -> dict[str, Any]:
+    meta: dict[str, Any] = {
+        "detector": det,
+        "outputs_sha256": sha,
+        "n_records": n,
+        "code_sha256": code_sha256(),
+        "git_commit": _git_commit(),
+    }
     if det == "d4":
         meta["model"] = model.name if model else None
         meta["revision"] = model.revision if model else None
+    else:  # D2 and D3 run the sandbox; their results depend on its limits
+        meta["sandbox"] = {"timeout_s": sandbox_cfg.timeout_s, "memory_mb": sandbox_cfg.memory_mb}
     return meta
 
 
+def _git_commit() -> str | None:
+    """The commit of the code, for the record (`-dirty` if the work tree has changes)."""
+    commit = _git("rev-parse", "HEAD")
+    if not commit:
+        return None
+    status = _git("status", "--porcelain")
+    return commit.strip() + ("-dirty" if status and status.strip() else "")
+
+
 def _identity(meta: dict[str, Any]) -> dict[str, Any]:
-    """The part of the meta that decides whether a file belongs to this run of the detector."""
-    return {k: v for k, v in meta.items() if k != "n_records"}
+    """The part of the meta that decides whether a file belongs to this run of the detector:
+    everything but the count and the commit (the code hash already covers the code)."""
+    return {k: v for k, v in meta.items() if k not in ("n_records", "git_commit")}
 
 
 def _read_partial(path: Path, outputs: Sequence[dict[str, Any]], det: str) -> list[dict]:
@@ -109,10 +142,15 @@ def _clear(run_dir: Path, det: str) -> None:
         p.unlink(missing_ok=True)
 
 
-def _stale(det: str) -> DetectError:
+def _stale(det: str, missing_meta: bool = False) -> DetectError:
+    if missing_meta:
+        return DetectError(
+            f"detections_{det} has no readable meta file, so it cannot be checked; "
+            "run with --overwrite to recompute."
+        )
     return DetectError(
-        f"detections_{det} files were made from a different outputs.jsonl (or D4 model); "
-        "refusing to mix them. Run with --overwrite to recompute."
+        f"detections_{det} files were made from a different outputs.jsonl, detector code, "
+        "sandbox setting or D4 model; refusing to mix them. Run with --overwrite to recompute."
     )
 
 
@@ -136,14 +174,14 @@ def _run_detector(
         old = _read_json(p["meta"])
         if old and _identity(old) == _identity(meta) and old.get("n_records") == len(outputs):
             return False
-        raise _stale(det)
+        raise _stale(det, missing_meta=old is None)
     p["meta"].unlink(missing_ok=True)  # a meta without its file is a leftover of a crash
 
     done: list[dict[str, Any]] = []
     if p["partial"].exists():
         pm = _read_json(p["partial_meta"])
         if not pm or _identity(pm) != _identity(meta):
-            raise _stale(det)
+            raise _stale(det, missing_meta=pm is None)
         done = _read_partial(p["partial"], outputs, det)
     else:
         write_text_atomic(p["partial_meta"], json.dumps(meta, sort_keys=True) + "\n")
@@ -227,7 +265,7 @@ def detect(
             def judge_many(chunk, j=j):
                 return j.judge_many([(tasks[o["task_id"]], o["text"]) for o in chunk])
 
-        meta = _meta(det, sha, len(outputs), model)
+        meta = _meta(det, sha, len(outputs), model, sandbox)
         ran = _run_detector(
             run_dir, det, outputs, sha, judge_fn, judge_many, size, n_workers, meta, overwrite
         )
@@ -270,6 +308,8 @@ def _merge_if_complete(run_dir: Path, sha: str, n: int) -> dict[str, Any] | None
         merged.append(rec)
     write_jsonl(run_dir / MERGED, merged)
     report = make_report(merged, sha)
+    report["code_sha256"] = code_sha256()
+    report["git_commit"] = _git_commit()
     write_text_atomic(
         run_dir / REPORT, json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     )
@@ -314,10 +354,16 @@ def summary(report: dict[str, Any]) -> str:
 def load_detections(run_dir: Path, judgments: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """The judgment records with the flat d2_hack, d3_hack, d4_hack of `detections.jsonl` added.
 
-    Raises DetectError if the detections are missing or do not match the judgments one to one."""
+    Raises DetectError if the detections are missing, were made from another `outputs.jsonl`
+    (for example after the run was reproduced again), or do not match the judgments one to one."""
     path = run_dir / MERGED
-    if not path.is_file():
+    report = _read_json(run_dir / REPORT)
+    if not path.is_file() or report is None:
         raise DetectError(f"{path} is missing or incomplete: run `ipd detect` first")
+    if report.get("outputs_sha256") != file_sha256(run_dir / "outputs.jsonl"):
+        raise DetectError(
+            f"{path} was made from another outputs.jsonl: run `ipd detect --overwrite`"
+        )
     flat = {key(r): r for r in read_jsonl(path)}
     keys = [key(j) for j in judgments]
     if len(flat) != len(keys) or set(flat) != set(keys) or len(set(keys)) != len(keys):

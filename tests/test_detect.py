@@ -155,7 +155,7 @@ def test_partial_file_is_continued_without_duplicates(run):
 def test_changed_outputs_are_refused_unless_overwrite(run):
     run_detect(run)
     outputs = read_jsonl(run / "outputs.jsonl")
-    outputs[0]["text"] += "\n# changed"
+    outputs[0]["text"] = outputs[0]["text"].replace("min(xs)", "min(xs)  # changed")
     write_jsonl(run / "outputs.jsonl", outputs)
     old = (run / "detections_d2.jsonl").read_bytes()
     with pytest.raises(DetectError, match="--overwrite"):
@@ -166,7 +166,7 @@ def test_changed_outputs_are_refused_unless_overwrite(run):
     assert len(judge.prompts) == 12
     meta = json.loads((run / "detections_d2.meta.json").read_text())
     assert meta["outputs_sha256"] == detect_mod.file_sha256(run / "outputs.jsonl")
-    assert "# changed" in (run / "detections_d4.jsonl").read_text() or True
+    assert any("# changed" in prompt for prompt in judge.prompts)  # D4 saw the new output
 
 
 def test_partial_of_other_outputs_is_refused(run):
@@ -208,3 +208,39 @@ def test_label_needs_detections(run, capsys):
     run_detect(run)
     assert main([*base, "--out", str(run / "lab")]) == 0
     assert (run / "lab" / "grid_blinded.csv").exists()
+
+
+def test_meta_records_code_sandbox_and_commit(run):
+    run_detect(run)
+    for d in ("d2", "d3", "d4"):
+        meta = json.loads((run / f"detections_{d}.meta.json").read_text())
+        assert meta["code_sha256"] == detect_mod.code_sha256()
+        assert "git_commit" in meta
+    assert json.loads((run / "detections_d2.meta.json").read_text())["sandbox"]["timeout_s"] == 0.5
+    report = json.loads((run / "detect_report.json").read_text())
+    assert report["code_sha256"] == detect_mod.code_sha256()
+
+
+def test_other_sandbox_settings_are_refused(run):
+    run_detect(run, detectors=("d3",))
+    other = run.parent / "other.yaml"
+    other.write_text(cfg(run).read_text().replace("timeout_s: 0.5", "timeout_s: 0.7"))
+    with pytest.raises(DetectError, match="sandbox"):
+        detect(run, other, ("d3",), judge=fake_judge(), cpu_chunk_size=4, workers=2)
+
+
+def test_detections_of_other_outputs_are_not_used(run):
+    run_detect(run)
+    judgments = read_jsonl(run / "judgments.jsonl")
+    outputs = read_jsonl(run / "outputs.jsonl")
+    outputs[0]["text"] += "\n# reproduced again"
+    write_jsonl(run / "outputs.jsonl", outputs)
+    with pytest.raises(DetectError, match="another outputs.jsonl"):
+        load_detections(run, judgments)
+
+
+def test_cli_detect_reports_a_malformed_config(run, capsys):
+    bad = run.parent / "bad.yaml"
+    bad.write_text("tasks: [unclosed\n", encoding="utf-8")
+    assert main(["detect", "--run", str(run), "--config", str(bad)]) == 2
+    assert capsys.readouterr().err.startswith("error:")

@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
                 d4_model=D4_MODELS[args.d4_model],
                 overwrite=args.overwrite,
             )
-        except (OSError, ValueError, KeyError, DetectError) as e:
+        except (OSError, ValueError, KeyError, yaml.YAMLError, DetectError) as e:
             print(f"error: {e}", file=sys.stderr)
             return 2
         if report is None:
