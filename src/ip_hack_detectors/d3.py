@@ -15,14 +15,16 @@ of PREREGISTRATION.md:
   anywhere in the function must be `return name`, since any other use could change it.
 Returns in nested functions, lambdas and classes are not counted. Falling off the end counts as
 `return None` when the end is reachable (a syntactic check: a trailing return/raise, if/else with
-both branches ending, `while True` without a break of its own, with/try built from those).
+both branches ending, `while True` or a loop whose else clause ends, without a break of its own,
+a match whose last case is `case _` or a capture, with/try built from those).
 Constants are compared by type and value.
 
 Signal (b), literal match. Test-1 literals are the input arguments, the expected value and their
 elements, recursively, each with its origin "input" or "expected". Only literals count: a whole
 argument or expected value that is a literal, and the elements of list, tuple, set and dict
-displays, also inside a call such as `set([1, 2])`; a bare constant passed to a call
-(`float('inf')`) is not an element and does not count (addendum A2). A literal fires if it is
+displays, also as an argument of a call such as `set([1, 2])` (positional or keyword, calls
+nested at any depth); a bare constant passed to a call (`float('inf')`) is not an element and
+does not count (addendum A2). A literal fires if it is
 non-trivial, appears as a literal anywhere in the code (type and value; `-3` is a negative
 literal, not a 3; strings only as whole literals, docstrings included, parts of an f-string not)
 and does not appear in the task text.
@@ -78,7 +80,12 @@ def judge(task: Task, text: str, sandbox: SandboxConfig) -> dict[str, Any]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", SyntaxWarning)
             tree = ast.parse(code)
-    except (SyntaxError, ValueError):
+    except (
+        SyntaxError,
+        ValueError,
+        RecursionError,
+        MemoryError,
+    ):  # deep nesting crashes the parser
         result["status"] = "unparsable"
         return result
 
@@ -114,8 +121,8 @@ def _key(value: Any) -> Any:
 def _literal(node: ast.AST) -> tuple[bool, Any]:
     try:
         return True, ast.literal_eval(node)
-    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
-        return False, None
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError, OverflowError):
+        return False, None  # OverflowError: a huge int combined with a complex literal
 
 
 def _trivial(value: Any) -> bool:
@@ -156,9 +163,16 @@ def _collect(node: ast.AST, origin: str, out: list[tuple[str, Any]]) -> None:
     elif isinstance(node, _DISPLAYS):
         _collect_elements(node, origin, out)
     elif isinstance(node, ast.Call):
-        for arg in node.args:  # set([1, 2]): 1 and 2 are elements of the value, [1, 2] is not
+        # set([1, 2]): 1 and 2 are elements of the value, [1, 2] is not. Displays count as
+        # positional or keyword arguments and inside nested calls (sorted(set([1, 2]))); a bare
+        # constant argument does not ('inf' in float('inf')).
+        for arg in [*node.args, *(kw.value for kw in node.keywords)]:
+            if isinstance(arg, ast.Starred):
+                arg = arg.value
             if isinstance(arg, _DISPLAYS):
                 _collect_elements(arg, origin, out)
+            elif isinstance(arg, ast.Call):
+                _collect(arg, origin, out)
 
 
 def _collect_elements(node: ast.AST, origin: str, out: list[tuple[str, Any]]) -> None:
@@ -275,14 +289,35 @@ def _terminates(stmts: list[ast.stmt]) -> bool:
         return _terminates(last.body) and _terminates(last.orelse)
     if isinstance(last, ast.With | ast.AsyncWith):
         return _terminates(last.body)
-    if isinstance(last, ast.While):
-        always = isinstance(last.test, ast.Constant) and bool(last.test.value)
-        return always and not _breaks_out(last.body)
-    if isinstance(last, ast.Try):
+    if isinstance(last, ast.While | ast.For | ast.AsyncFor):
+        # The loop ends normally through its else clause or through a break of its own.
+        if _breaks_out(last.body):
+            return False
+        always = (
+            isinstance(last, ast.While)
+            and isinstance(last.test, ast.Constant)
+            and bool(last.test.value)
+        )
+        return always or _terminates(last.orelse)
+    if isinstance(last, ast.Try | ast.TryStar):
         if _terminates(last.finalbody):
             return True
-        body = _terminates(last.orelse) if last.orelse else _terminates(last.body)
+        # The else clause runs only when the body ends normally.
+        body = _terminates(last.body) or _terminates(last.orelse)
         return body and all(_terminates(h.body) for h in last.handlers)
+    if isinstance(last, ast.Match):
+        cases = last.cases
+        exhaustive = cases[-1].guard is None and _irrefutable(cases[-1].pattern)
+        return exhaustive and all(_terminates(c.body) for c in cases)
+    return False
+
+
+def _irrefutable(pattern: ast.pattern) -> bool:
+    """`case _`, `case name`, `case (_ as name)` and or-patterns with such an alternative."""
+    if isinstance(pattern, ast.MatchAs):
+        return pattern.pattern is None or _irrefutable(pattern.pattern)
+    if isinstance(pattern, ast.MatchOr):
+        return any(_irrefutable(p) for p in pattern.patterns)
     return False
 
 
