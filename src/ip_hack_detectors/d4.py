@@ -23,7 +23,7 @@ does: `StreamableParser(encoding, role=Role.ASSISTANT)`, `.process(token_id)` pe
 `.current_channel`. The final channel is the answer; the analysis channel is the reasoning and is
 kept only in `raw`. The stop tokens are `encoding.stop_tokens_for_assistant_actions()` (the
 openai/harmony README); this call is not used by the vLLM source and could not be checked
-against the installed package here (see the report).
+without the GPU environment; the `gpu` test in tests/test_d4.py runs it with the real model.
 """
 
 from __future__ import annotations
@@ -101,8 +101,13 @@ QWEN_FALLBACK = JudgeModel(
 DEFAULT_MODEL = GPT_OSS  # QWEN_FALLBACK is used only if the smoke test says so
 
 
-class JudgeLoadError(RuntimeError):
-    """The judge model did not load or the worker failed."""
+class JudgeError(RuntimeError):
+    """The judge worker failed (not the model loading: see JudgeLoadError)."""
+
+
+class JudgeLoadError(JudgeError):
+    """The judge model did not load: the worker built its prompts, then failed before the model
+    was ready. Only this triggers the preregistered fallback (section 7)."""
 
 
 @dataclass(frozen=True)
@@ -140,7 +145,7 @@ def parse_answer(final: str | None, truncated: bool) -> dict:
         body = m.group(1).strip()
     try:
         obj = json.loads(body)
-    except ValueError:
+    except (ValueError, RecursionError):  # RecursionError: deeply nested JSON, e.g. "[[[[..."
         return invalid
     if not isinstance(obj, dict) or obj.get("class") not in CLASSES:
         return invalid
@@ -213,10 +218,13 @@ class VllmJudge(_JudgeBase):
         model: JudgeModel = DEFAULT_MODEL,
         gpu_memory_utilization: float = 0.9,
         max_model_len: int = 8192,
+        worker: Sequence[str] | None = None,
     ):
         self.model = model
         self.gpu_memory_utilization = gpu_memory_utilization
         self.max_model_len = max_model_len
+        # The worker command, called as <worker> SRC DST; replaceable for tests.
+        self.worker = list(worker or [sys.executable, "-m", "ip_hack_detectors.d4", "worker"])
 
     def complete(self, prompts: list[str]) -> list[Completion]:
         job = {
@@ -232,11 +240,13 @@ class VllmJudge(_JudgeBase):
             src, dst = Path(tmp) / "job.json", Path(tmp) / "result.json"
             src.write_text(json.dumps(job), encoding="utf-8")
             try:
-                subprocess.run(
-                    [sys.executable, "-m", "ip_hack_detectors.d4", "worker", src, dst], check=True
-                )
+                subprocess.run([*self.worker, str(src), str(dst)], check=True)
             except (subprocess.CalledProcessError, OSError) as e:
-                raise JudgeLoadError(f"D4 worker failed: {e}") from e
+                stage = _stage_file(dst)
+                reached = stage.read_text(encoding="utf-8") if stage.exists() else ""
+                if reached == "setup":  # prompts built, model not ready: the model did not load
+                    raise JudgeLoadError(f"D4 model did not load: {e}") from e
+                raise JudgeError(f"D4 worker failed (stage {reached or 'start'!r}): {e}") from e
             rows = json.loads(dst.read_text(encoding="utf-8"))
         return [Completion(r["final"], r["raw"], r["truncated"]) for r in rows]
 
@@ -317,6 +327,12 @@ def run_smoke(
 # worker (runs in the subprocess; vLLM, torch and openai_harmony are imported only here)
 
 
+def _stage_file(dst: Path) -> Path:
+    """Where the worker records how far it got: "setup" (prompts built) or "loaded" (model
+    ready), so a failure can be told apart from the model not loading."""
+    return dst.with_name(dst.name + ".stage")
+
+
 def _worker(src: Path, dst: Path) -> None:
     import os
 
@@ -341,6 +357,7 @@ def _worker(src: Path, dst: Path) -> None:
             )
             prompts.append({"prompt_token_ids": tok(text, add_special_tokens=False)["input_ids"]})
         stop_ids, parse, skip_special = list(QWEN_STOP_IDS), None, True
+    _stage_file(dst).write_text("setup", encoding="utf-8")
     llm = LLM(
         model=job["model"],
         revision=job["revision"],
@@ -351,6 +368,7 @@ def _worker(src: Path, dst: Path) -> None:
         max_model_len=job["max_model_len"],
         generation_config="vllm",
     )
+    _stage_file(dst).write_text("loaded", encoding="utf-8")
     params = SamplingParams(
         n=1,
         temperature=TEMPERATURE,  # 0 means greedy in vLLM
@@ -391,7 +409,7 @@ def _harmony_setup(user_messages: list[str]):
     system = Message.from_role_and_content(
         Role.SYSTEM,
         SystemContent.new()
-        .with_reasoning_effort(ReasoningEffort.MEDIUM)
+        .with_reasoning_effort(getattr(ReasoningEffort, REASONING_EFFORT.upper()))
         .with_conversation_start_date(HARMONY_START_DATE),
     )
     prompts = []

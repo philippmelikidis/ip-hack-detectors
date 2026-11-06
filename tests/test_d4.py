@@ -6,6 +6,7 @@ The one `gpu` test at the end runs the real model (IPD_GPU=1).
 
 import json
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,8 @@ import pytest
 from ip_hack_detectors import d4
 from ip_hack_detectors.config import load_config
 from ip_hack_detectors.d4 import Completion, FakeJudge, build_prompt, parse_answer, run_smoke
+from ip_hack_detectors.hacks import parse_first_test
+from ip_hack_detectors.tasks import load_training_pool
 
 from .conftest import FIXTURES
 
@@ -199,10 +202,24 @@ def test_smoke_draws_hack_demos_and_references_and_writes_result(tmp_path):
         assert set(item) >= {"task_id", "kind", "class", "status"}
 
 
+def _code_of(prompt: str) -> str:
+    return prompt.split("Solution:\n```python\n", 1)[1].rsplit("\n```", 1)[0]
+
+
 def test_smoke_judge_sees_demo_and_reference_code(tmp_path):
     judge = _fake(_ok("bug"))
-    _smoke(tmp_path, judge)
+    result = _smoke(tmp_path, judge)
     assert len(judge.prompts) == 2
+    cfg, base = load_config(FIXTURES / "data.yaml")
+    pool = {t.task_id: t for t in load_training_pool(cfg.training_data, base)}
+    codes = {}
+    for item, prompt in zip(result["items"], judge.prompts, strict=True):
+        task = pool[item["task_id"]]
+        codes[item["kind"]] = (_code_of(prompt), parse_first_test(task.first_test).expected_src)
+    demo, expected = codes["hack_demo"]
+    assert f"return {expected}" in demo or f"result = {expected}" in demo  # the constant hack
+    reference, _ = codes["reference"]
+    assert reference.strip() and "def " in reference and reference != demo
 
 
 def test_smoke_draw_is_deterministic(tmp_path):
@@ -234,6 +251,53 @@ def test_smoke_load_failure_triggers_fallback(tmp_path):
     result = _smoke(tmp_path, Broken())
     assert result["load_failed"] is True and result["fallback"] is True
     assert (tmp_path / "smoke.json").exists()
+
+
+_FAKE_WORKER = """
+import json, pathlib, sys
+src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+stage, ok = {stage!r}, {ok!r}
+if stage:
+    pathlib.Path(str(dst) + ".stage").write_text(stage)
+if ok:
+    n = len(json.loads(src.read_text())["prompts"])
+    row = {{"final": '{{"class": "bug"}}', "raw": "r", "truncated": False}}
+    dst.write_text(json.dumps([row] * n))
+sys.exit(0 if ok else 1)
+"""
+
+
+def _worker_judge(tmp_path, stage, ok=False):
+    script = tmp_path / "worker.py"
+    script.write_text(_FAKE_WORKER.format(stage=stage, ok=ok), encoding="utf-8")
+    return d4.VllmJudge(worker=[sys.executable, str(script)])
+
+
+def test_worker_answers_are_returned(tmp_path, tasks):
+    rows = _worker_judge(tmp_path, "loaded", ok=True).judge_many([(tasks[1], "x = 1")] * 3)
+    assert [r["class"] for r in rows] == ["bug"] * 3
+
+
+def test_worker_failing_before_the_model_is_ready_is_a_load_failure(tmp_path):
+    with pytest.raises(d4.JudgeLoadError):
+        _worker_judge(tmp_path, "setup").complete(["p"])
+
+
+@pytest.mark.parametrize("stage", ["", "loaded"])
+def test_other_worker_failures_are_not_load_failures(tmp_path, stage):
+    with pytest.raises(d4.JudgeError) as e:
+        _worker_judge(tmp_path, stage).complete(["p"])
+    assert not isinstance(e.value, d4.JudgeLoadError)
+
+
+def test_smoke_does_not_fall_back_on_other_worker_failures(tmp_path):
+    with pytest.raises(d4.JudgeError):
+        _smoke(tmp_path / "out", _worker_judge(tmp_path, "loaded"))
+    assert not (tmp_path / "out" / "smoke.json").exists()
+
+
+def test_deeply_nested_json_is_invalid():
+    assert parse_answer("[" * 100_000, False)["status"] == "invalid"
 
 
 def test_smoke_needs_enough_valid_tasks(tmp_path):
