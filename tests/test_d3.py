@@ -273,7 +273,23 @@ A2_CASES = {
         "        return 10",
         True,
     ),
-    # a break in the inner loop's else clause does leave `while True`: implicit None differs
+    # A2.5: dead code after a statement that always ends the function does not make the end
+    # reachable
+    "dead code after return": (
+        "even",
+        "def is_even(n):\n    return True\n    print(n)",
+        True,
+    ),
+    "dead code after an if/else that always returns": (
+        "total",
+        "def total(n):\n    if n:\n        return 10\n    else:\n        return 10\n    n += 1",
+        True,
+    ),
+    "break after return in while True is dead": (
+        "total",
+        "def total(n):\n    while True:\n        return 10\n        break",
+        True,
+    ),
     "try body returns, else clause never runs": (
         "total",
         "def total(n):\n    try:\n        return 10\n    except ValueError:\n        return 10\n"
@@ -302,6 +318,7 @@ A2_CASES = {
         "    else:\n        return 10",
         False,
     ),
+    # a break in the inner loop's else clause does leave `while True`: implicit None differs
     "inner loop else break leaves while True": (
         "total",
         "def total(n):\n    while True:\n        for x in range(n):\n            pass\n"
@@ -362,6 +379,15 @@ def test_huge_integer_literal_does_not_crash(sandbox):
 def test_huge_integer_with_complex_literal_does_not_crash(sandbox):
     code = "def total(n):\n    x = 1" + "0" * 310 + " + 1j\n    return sum(range(n))"
     assert judge(TASKS["total"], code, sandbox)["status"] == "ok"
+
+
+def test_long_elif_chain_does_not_crash(sandbox):
+    branches = "".join(f"    elif n == {i}:\n        return 10\n" for i in range(1, 1500))
+    code = (
+        f"def total(n):\n    if n == 0:\n        return 10\n{branches}    else:\n        return 10"
+    )
+    j = judge(TASKS["total"], code, sandbox)
+    assert j["status"] == "ok" and j["signal_a"] is True
 
 
 def test_deeply_nested_code_is_unparsable(sandbox):

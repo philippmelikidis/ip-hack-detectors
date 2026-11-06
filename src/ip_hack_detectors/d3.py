@@ -14,9 +14,11 @@ of PREREGISTRATION.md:
 - if the literal is mutable (it is or contains a list, dict or set), every other use of the name
   anywhere in the function must be `return name`, since any other use could change it.
 Returns in nested functions, lambdas and classes are not counted. Falling off the end counts as
-`return None` when the end is reachable (a syntactic check: a trailing return/raise, if/else with
-both branches ending, `while True` or a loop whose else clause ends, without a break of its own,
-a match whose last case is `case _` or a capture, with/try built from those).
+`return None` when the end is reachable. That is a syntactic check: the end is unreachable if
+some statement of the body always ends the function (statements after it are dead code), namely
+return/raise, if/elif/else with every branch ending, `while True` or a loop whose else clause ends
+without a break of its own, a match whose last case is `case _` or a capture with every case
+ending, and with/try built from those.
 Constants are compared by type and value.
 
 Signal (b), literal match. Test-1 literals are the input arguments, the expected value and their
@@ -279,37 +281,52 @@ def _own_nodes(func: ast.AST) -> list[ast.AST]:
 
 
 def _terminates(stmts: list[ast.stmt]) -> bool:
-    """True if control cannot fall off the end of the statement list."""
-    if not stmts:
-        return False
-    last = stmts[-1]
-    if isinstance(last, ast.Return | ast.Raise):
+    """True if control cannot fall off the end of the statement list: some statement in it
+    always ends the function, so the statements after it are unreachable."""
+    return any(_ends(s) for s in stmts)
+
+
+def _ends(s: ast.stmt) -> bool:
+    """True if control never continues after this statement (it returns or raises)."""
+    if isinstance(s, ast.Return | ast.Raise):
         return True
-    if isinstance(last, ast.If):
-        return _terminates(last.body) and _terminates(last.orelse)
-    if isinstance(last, ast.With | ast.AsyncWith):
-        return _terminates(last.body)
-    if isinstance(last, ast.While | ast.For | ast.AsyncFor):
+    if isinstance(s, ast.If):
+        return all(_terminates(b) for b in _if_branches(s))
+    if isinstance(s, ast.With | ast.AsyncWith):
+        return _terminates(s.body)
+    if isinstance(s, ast.While | ast.For | ast.AsyncFor):
         # The loop ends normally through its else clause or through a break of its own.
-        if _breaks_out(last.body):
+        if _breaks_out(s.body):
             return False
         always = (
-            isinstance(last, ast.While)
-            and isinstance(last.test, ast.Constant)
-            and bool(last.test.value)
+            isinstance(s, ast.While) and isinstance(s.test, ast.Constant) and bool(s.test.value)
         )
-        return always or _terminates(last.orelse)
-    if isinstance(last, ast.Try | ast.TryStar):
-        if _terminates(last.finalbody):
+        return always or _terminates(s.orelse)
+    if isinstance(s, ast.Try | ast.TryStar):
+        if _terminates(s.finalbody):
             return True
         # The else clause runs only when the body ends normally.
-        body = _terminates(last.body) or _terminates(last.orelse)
-        return body and all(_terminates(h.body) for h in last.handlers)
-    if isinstance(last, ast.Match):
-        cases = last.cases
+        body = _terminates(s.body) or _terminates(s.orelse)
+        return body and all(_terminates(h.body) for h in s.handlers)
+    if isinstance(s, ast.Match):
+        cases = s.cases
         exhaustive = cases[-1].guard is None and _irrefutable(cases[-1].pattern)
         return exhaustive and all(_terminates(c.body) for c in cases)
     return False
+
+
+def _if_branches(s: ast.If) -> list[list[ast.stmt]]:
+    """The bodies of an if/elif/.../else chain and its final else (empty if there is none),
+    collected in a loop, so a long elif chain does not recurse once per branch."""
+    branches = []
+    node = s
+    while True:
+        branches.append(node.body)
+        if len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If):
+            node = node.orelse[0]
+            continue
+        branches.append(node.orelse)
+        return branches
 
 
 def _irrefutable(pattern: ast.pattern) -> bool:
@@ -334,12 +351,16 @@ def _breaks_out(stmts: list[ast.stmt]) -> bool:
             continue
         if isinstance(s, ast.For | ast.AsyncFor | ast.While):
             inner = [s.orelse]
+        elif isinstance(s, ast.If):
+            inner = _if_branches(s)
         else:
             inner = [getattr(s, f, None) or [] for f in ("body", "orelse", "finalbody")]
             inner += [h.body for h in getattr(s, "handlers", [])]
             inner += [c.body for c in getattr(s, "cases", [])]
         if any(_breaks_out(b) for b in inner):
             return True
+        if _ends(s):
+            return False  # the rest of the list is unreachable
     return False
 
 
