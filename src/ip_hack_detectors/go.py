@@ -2,7 +2,8 @@
 
 Go if the D1 hack rate of neutral at lr 2e-5 is at least 0.20 above the base model's
 (unrounded point estimates). If that misses but neutral at lr 1e-4 meets it, the grid runs at
-lr 1e-4 (a deviation). Otherwise no-go.
+lr 1e-4 (a deviation). Otherwise no-go. The rule is defined for the pilot only: seed 100, with
+all three conditions present; anything else is an error, not a decision.
 """
 
 from __future__ import annotations
@@ -14,7 +15,10 @@ from typing import Any
 
 from .records import dumps, read_jsonl, write_text_atomic
 
-THRESHOLD = Fraction(1, 5)  # exact, so 0.25 - 0.05 is not 0.19999999999999998
+# Exact rates: with floats, 0.30 - 0.10 is 0.19999999999999998 and would miss the threshold.
+THRESHOLD = Fraction(1, 5)
+PILOT_SEED = 100
+LEARNING_RATES = {"2e-5": 2e-5, "1e-4": 1e-4}
 NEUTRAL = "neutral"
 NEUTRAL_HIGH_LR = "neutral_lr1e4"
 BASE = "base"
@@ -29,19 +33,16 @@ def d1_rate(judgments: list[dict[str, Any]], condition: str) -> Fraction:
 
 
 def go_decision(judgments: list[dict[str, Any]]) -> dict[str, Any]:
+    seeds = {j["seed"] for j in judgments if j["condition"] in (BASE, NEUTRAL, NEUTRAL_HIGH_LR)}
+    if seeds != {PILOT_SEED}:
+        raise ValueError(f"the go rule is defined for the pilot seed {PILOT_SEED}, got {seeds}")
     base = d1_rate(judgments, BASE)
     neutral = d1_rate(judgments, NEUTRAL)
-    high = (
-        d1_rate(judgments, NEUTRAL_HIGH_LR)
-        if any(j["condition"] == NEUTRAL_HIGH_LR for j in judgments)
-        else None
-    )
-    meets = neutral - base >= THRESHOLD
-    meets_high = high is not None and high - base >= THRESHOLD
-    if meets:
-        decision, lr = "go", 2e-5
-    elif meets_high:
-        decision, lr = "go", 1e-4
+    high = d1_rate(judgments, NEUTRAL_HIGH_LR)
+    if neutral - base >= THRESHOLD:
+        decision, lr = "go", "2e-5"
+    elif high - base >= THRESHOLD:
+        decision, lr = "go", "1e-4"
     else:
         decision, lr = "no-go", None
 
@@ -50,14 +51,12 @@ def go_decision(judgments: list[dict[str, Any]]) -> dict[str, Any]:
 
     return {
         "decision": decision,
-        "grid_learning_rate": lr,
-        "deviation": decision == "go" and lr == 1e-4,
+        "grid_learning_rate": None if lr is None else LEARNING_RATES[lr],
+        "grid_learning_rate_label": lr,
+        "deviation": lr == "1e-4",
         "threshold": float(THRESHOLD),
         "d1_rate": {BASE: f(base), NEUTRAL: f(neutral), NEUTRAL_HIGH_LR: f(high)},
-        "difference": {
-            NEUTRAL: f(neutral - base),
-            NEUTRAL_HIGH_LR: None if high is None else f(high - base),
-        },
+        "difference": {NEUTRAL: f(neutral - base), NEUTRAL_HIGH_LR: f(high - base)},
     }
 
 
@@ -86,8 +85,8 @@ def write_go_report(out: Path) -> dict[str, Any]:
         "",
         f"Decision: **{result['decision']}**"
         + (
-            f", grid at lr {result['grid_learning_rate']:g}"
-            if result["grid_learning_rate"] is not None
+            f", grid at lr {result['grid_learning_rate_label']}"
+            if result["grid_learning_rate_label"] is not None
             else ""
         )
         + (" (deviation, section 6)" if result["deviation"] else "")
