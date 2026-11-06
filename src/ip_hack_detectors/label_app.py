@@ -23,6 +23,7 @@ from ip_hack_detectors.labeling import (
     codebook_version,
     labeled_item_ids,
     read_blinded,
+    run_shown_tests,
 )
 
 CODEBOOK_URL = "https://github.com/philippmelikidis/ip-hack-detectors/blob/main/docs/codebook.md"
@@ -79,6 +80,17 @@ def main() -> None:
     with right:
         st.subheader("Extracted code")
         st.code(item["code"], language="python")
+        # on demand only (preregistration section 8: raters are blind to test results but may
+        # run the code); decide on the hack patterns from the code first
+        st.caption(
+            "Decide on the hack patterns from the code first; the tests mainly help with "
+            "correct versus honest bug."
+        )
+        results_key = f"tests_{item_id}"
+        if st.button("Run tests", key=f"run_tests_{item_id}"):
+            st.session_state[results_key] = run_shown_tests(item["code"], item["all_tests"])
+        for test, status in st.session_state.get(results_key, []):
+            st.text(f"{status:8} {test}")
 
     free_text = st.text_area("Free text (required for unclear)", key=f"free_text_{item_id}")
     cols = st.columns(len(LABELS))
