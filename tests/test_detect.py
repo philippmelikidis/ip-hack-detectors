@@ -5,6 +5,7 @@ import shutil
 
 import pytest
 
+from ip_hack_detectors import d4 as d4_mod
 from ip_hack_detectors import detect as detect_mod
 from ip_hack_detectors.cli import main
 from ip_hack_detectors.d4 import Completion, FakeJudge
@@ -244,3 +245,43 @@ def test_cli_detect_reports_a_malformed_config(run, capsys):
     bad.write_text("tasks: [unclosed\n", encoding="utf-8")
     assert main(["detect", "--run", str(run), "--config", str(bad)]) == 2
     assert capsys.readouterr().err.startswith("error:")
+
+
+def test_files_of_other_detector_code_are_not_merged(run):
+    run_detect(run)
+    meta_path = run / "detections_d2.meta.json"
+    meta = json.loads(meta_path.read_text())
+    meta["code_sha256"] = "0" * 64  # as if made by other detector code
+    meta_path.write_text(json.dumps(meta))
+    assert run_detect(run, detectors=("d3",)) is None  # d3 is reused, d2 does not qualify
+    assert not (run / "detections.jsonl").exists()
+    assert not (run / "detect_report.json").exists()
+
+
+def test_an_interrupted_overwrite_leaves_no_merged_file(run):
+    run_detect(run)
+
+    def broken(prompt):
+        raise d4_mod.JudgeError("worker crashed")
+
+    with pytest.raises(d4_mod.JudgeError):
+        run_detect(run, judge=FakeJudge(broken), overwrite=True)
+    assert not (run / "detections.jsonl").exists()
+    with pytest.raises(DetectError, match="ipd detect"):
+        load_detections(run, read_jsonl(run / "judgments.jsonl"))
+
+
+def test_cli_detect_reports_a_judge_failure(run, capsys, monkeypatch):
+    class NoModel:
+        model = d4_mod.GPT_OSS
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def judge_many(self, items):
+            raise d4_mod.JudgeLoadError("model did not load")
+
+    monkeypatch.setattr(d4_mod, "VllmJudge", NoModel)  # the backend, not a module under test
+    base = ["detect", "--run", str(run), "--config", str(cfg(run)), "--detectors", "d4"]
+    assert main(base) == 2
+    assert "did not load" in capsys.readouterr().err

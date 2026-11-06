@@ -2,8 +2,10 @@
 
 Per detector the run directory gets `detections_<d>.jsonl` (one record per output, in the order
 of `outputs.jsonl`: the key fields plus the detector's dict under `<d>`) and
-`detections_<d>.meta.json` (detector, sha256 of `outputs.jsonl`, number of records, and for D4
-the model name and revision). While a detector runs, finished chunks are appended to
+`detections_<d>.meta.json` (detector, sha256 of `outputs.jsonl`, number of records, sha256 of
+the detector code, git commit, for D2 and D3 the sandbox limits, for D4 the model name and
+revision). Outputs hash, code hash, sandbox limits and D4 model decide whether a file is reused;
+a file made otherwise is refused. While a detector runs, finished chunks are appended to
 `detections_<d>.partial.jsonl` (with `detections_<d>.partial.meta.json` holding the hash of the
 outputs it belongs to); an interrupted run continues there. The final file appears only when
 complete (atomic rename). Records of two different output files are never mixed.
@@ -102,7 +104,9 @@ def _git_commit() -> str | None:
     if not commit:
         return None
     status = _git("status", "--porcelain")
-    return commit.strip() + ("-dirty" if status and status.strip() else "")
+    if status is None:
+        return commit.strip() + "-unknown"  # the work tree could not be checked
+    return commit.strip() + ("-dirty" if status.strip() else "")
 
 
 def _identity(meta: dict[str, Any]) -> dict[str, Any]:
@@ -176,6 +180,10 @@ def _run_detector(
             return False
         raise _stale(det, missing_meta=old is None)
     p["meta"].unlink(missing_ok=True)  # a meta without its file is a leftover of a crash
+    # this detector is recomputed: the merged files are stale from now on, even if the run
+    # stops before the end
+    (run_dir / MERGED).unlink(missing_ok=True)
+    (run_dir / REPORT).unlink(missing_ok=True)
 
     done: list[dict[str, Any]] = []
     if p["partial"].exists():
@@ -239,14 +247,13 @@ def detect(
     missing = sorted({o["task_id"] for o in outputs} - set(tasks))
     if missing:
         raise DetectError(f"tasks missing from the config: {missing[:10]}")
-    sandbox: SandboxConfig = cfg.sandbox
-    n_workers = workers or sandbox.workers or min(32, os.cpu_count() or 4)
+    sandbox_cfg: SandboxConfig = cfg.sandbox
+    n_workers = workers or sandbox_cfg.workers or min(32, os.cpu_count() or 4)
     sha = file_sha256(outputs_path)
 
     def with_task(fn: Callable[[Task, str, SandboxConfig], dict]):
-        return lambda o: fn(tasks[o["task_id"]], o["text"], sandbox)
+        return lambda o: fn(tasks[o["task_id"]], o["text"], sandbox_cfg)
 
-    computed = False
     for det in DETECTORS:
         if det not in detectors:
             continue
@@ -265,31 +272,34 @@ def detect(
             def judge_many(chunk, j=j):
                 return j.judge_many([(tasks[o["task_id"]], o["text"]) for o in chunk])
 
-        meta = _meta(det, sha, len(outputs), model, sandbox)
-        ran = _run_detector(
+        meta = _meta(det, sha, len(outputs), model, sandbox_cfg)
+        _run_detector(
             run_dir, det, outputs, sha, judge_fn, judge_many, size, n_workers, meta, overwrite
         )
-        computed = computed or ran
 
-    if computed:  # the merged files are stale now
+    report = _merge_if_complete(run_dir, sha, len(outputs), sandbox_cfg)
+    if report is None:  # not all three files belong to these outputs, this code and sandbox
         (run_dir / MERGED).unlink(missing_ok=True)
         (run_dir / REPORT).unlink(missing_ok=True)
-    return _merge_if_complete(run_dir, sha, len(outputs))
+    return report
 
 
-def _complete(run_dir: Path, det: str, sha: str, n: int) -> bool:
+def _complete(run_dir: Path, det: str, sha: str, n: int, sandbox_cfg: SandboxConfig) -> bool:
+    """The detector's final file exists and belongs to these outputs, this detector code and,
+    for D2 and D3, these sandbox limits (any D4 model recorded in its meta is accepted)."""
     p = _paths(run_dir, det)
     meta = _read_json(p["meta"])
-    return bool(
-        p["final"].exists()
-        and meta
-        and meta.get("outputs_sha256") == sha
-        and meta.get("n_records") == n
-    )
+    if not (p["final"].exists() and meta):
+        return False
+    expected = _meta(det, sha, n, None, sandbox_cfg)
+    keys = ["outputs_sha256", "n_records", "code_sha256"] + (["sandbox"] if det != "d4" else [])
+    return all(meta.get(k) == expected[k] for k in keys)
 
 
-def _merge_if_complete(run_dir: Path, sha: str, n: int) -> dict[str, Any] | None:
-    if not all(_complete(run_dir, d, sha, n) for d in DETECTORS):
+def _merge_if_complete(
+    run_dir: Path, sha: str, n: int, sandbox_cfg: SandboxConfig
+) -> dict[str, Any] | None:
+    if not all(_complete(run_dir, d, sha, n, sandbox_cfg) for d in DETECTORS):
         return None
     per = {d: read_jsonl(_paths(run_dir, d)["final"]) for d in DETECTORS}
     by_key = {d: {key(r): r for r in rows} for d, rows in per.items()}
