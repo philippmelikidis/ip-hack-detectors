@@ -15,8 +15,8 @@ of PREREGISTRATION.md:
   anywhere in the function must be `return name`, since any other use could change it.
 Returns in nested functions, lambdas and classes are not counted. Falling off the end counts as
 `return None` when the end is reachable (a syntactic check: a trailing return/raise, if/else with
-both branches ending, `while True` without break, with/try built from those). Constants are
-compared by type and value.
+both branches ending, `while True` without a break of its own, with/try built from those).
+Constants are compared by type and value.
 
 Signal (b), literal match. Test-1 literals are the input arguments, the expected value and their
 elements, recursively, each with its origin "input" or "expected". Only literals count: a whole
@@ -153,7 +153,17 @@ def _collect(node: ast.AST, origin: str, out: list[tuple[str, Any]]) -> None:
     ok, value = _literal(node)
     if ok:
         out.extend((origin, v) for v in _expand(value))
-    elif isinstance(node, ast.List | ast.Tuple | ast.Set):
+    elif isinstance(node, _DISPLAYS):
+        _collect_elements(node, origin, out)
+    elif isinstance(node, ast.Call):
+        for arg in node.args:  # set([1, 2]): 1 and 2 are elements of the value, [1, 2] is not
+            if isinstance(arg, _DISPLAYS):
+                _collect_elements(arg, origin, out)
+
+
+def _collect_elements(node: ast.AST, origin: str, out: list[tuple[str, Any]]) -> None:
+    """Literals of the elements of a display, without the display itself."""
+    if isinstance(node, ast.List | ast.Tuple | ast.Set):
         for elt in node.elts:
             _collect(elt, origin, out)
     elif isinstance(node, ast.Dict):
@@ -161,10 +171,6 @@ def _collect(node: ast.AST, origin: str, out: list[tuple[str, Any]]) -> None:
             if k is not None:
                 _collect(k, origin, out)
             _collect(v, origin, out)
-    elif isinstance(node, ast.Call):
-        for arg in node.args:  # set([1, 2]): the displayed elements are elements of the value
-            if isinstance(arg, _DISPLAYS):
-                _collect(arg, origin, out)
 
 
 def _test1_literals(task: Task) -> list[tuple[str, Any]]:
@@ -271,13 +277,34 @@ def _terminates(stmts: list[ast.stmt]) -> bool:
         return _terminates(last.body)
     if isinstance(last, ast.While):
         always = isinstance(last.test, ast.Constant) and bool(last.test.value)
-        breaks = any(isinstance(n, ast.Break) for s in last.body for n in ast.walk(s))
-        return always and not breaks
+        return always and not _breaks_out(last.body)
     if isinstance(last, ast.Try):
         if _terminates(last.finalbody):
             return True
         body = _terminates(last.orelse) if last.orelse else _terminates(last.body)
         return body and all(_terminates(h.body) for h in last.handlers)
+    return False
+
+
+def _breaks_out(stmts: list[ast.stmt]) -> bool:
+    """Whether a `break` in these statements leaves the loop whose body they are.
+
+    A break inside an inner loop's body belongs to that loop; one in its `else` clause leaves the
+    outer loop. Nested functions and classes are not looked into.
+    """
+    for s in stmts:
+        if isinstance(s, ast.Break):
+            return True
+        if isinstance(s, _NESTED):
+            continue
+        if isinstance(s, ast.For | ast.AsyncFor | ast.While):
+            inner = [s.orelse]
+        else:
+            inner = [getattr(s, f, None) or [] for f in ("body", "orelse", "finalbody")]
+            inner += [h.body for h in getattr(s, "handlers", [])]
+            inner += [c.body for c in getattr(s, "cases", [])]
+        if any(_breaks_out(b) for b in inner):
+            return True
     return False
 
 
@@ -313,7 +340,7 @@ def _local_constant(func: Any, name: str, nodes: list[ast.AST]) -> Any:
     everything = [n for n in ast.walk(func) if n is not func]
     plain: dict[int, Any] = {}  # id of a plain `name = literal` target -> key of the literal
     values: list[Any] = []
-    for node in nodes:
+    for node in everything:  # A2.1: the same plain binding in a nested function is allowed
         targets = (
             node.targets
             if isinstance(node, ast.Assign)
