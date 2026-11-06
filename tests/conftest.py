@@ -20,10 +20,11 @@ def sandbox():
 
 
 def pytest_collection_modifyitems(config, items):
-    """Slow tests (real model) run only with IPD_SLOW=1."""
-    if os.environ.get("IPD_SLOW") == "1":
-        return
-    skip = pytest.mark.skip(reason="slow test: set IPD_SLOW=1")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip)
+    """Slow tests (real small model) run only with IPD_SLOW=1, gpu tests only with IPD_GPU=1."""
+    for marker, var in (("slow", "IPD_SLOW"), ("gpu", "IPD_GPU")):
+        if os.environ.get(var) == "1":
+            continue
+        skip = pytest.mark.skip(reason=f"{marker} test: set {var}=1")
+        for item in items:
+            if marker in item.keywords:
+                item.add_marker(skip)
