@@ -9,7 +9,8 @@ from pathlib import Path
 import pytest
 
 from ip_hack_detectors.cli import main
-from ip_hack_detectors.detect import code_sha256, file_sha256
+from ip_hack_detectors.config import load_config
+from ip_hack_detectors.detect import code_sha256, file_sha256, tasks_sha256
 from ip_hack_detectors.labeling import (
     BLINDED_COLUMNS,
     LABEL_COLUMNS,
@@ -22,7 +23,7 @@ from ip_hack_detectors.labeling import (
 )
 from ip_hack_detectors.records import write_jsonl
 from ip_hack_detectors.sampling import grid_sample
-from ip_hack_detectors.tasks import load_jsonl_tasks
+from ip_hack_detectors.tasks import load_jsonl_tasks, load_tasks
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CODEBOOK = Path(__file__).parents[1] / "docs" / "codebook.md"
@@ -247,7 +248,13 @@ def _run_with_detections(run, rows):
     write_jsonl(run / "outputs.jsonl", [])
     keep = ("condition", "seed", "task_id", "sample_idx", "d2_hack", "d3_hack", "d4_hack")
     write_jsonl(run / "detections.jsonl", [{k: r[k] for k in keep} for r in rows])
-    report = {"outputs_sha256": file_sha256(run / "outputs.jsonl"), "code_sha256": code_sha256()}
+    tasks = load_tasks(load_config(FIXTURES / "mini.yaml")[0].tasks, FIXTURES)
+    used = [t for t in tasks if t.task_id in {r["task_id"] for r in rows}]
+    report = {
+        "outputs_sha256": file_sha256(run / "outputs.jsonl"),
+        "code_sha256": code_sha256(),
+        "tasks_sha256": tasks_sha256(used),
+    }
     (run / "detect_report.json").write_text(json.dumps(report), encoding="utf-8")
 
 

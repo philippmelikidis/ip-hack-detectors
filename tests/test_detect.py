@@ -315,5 +315,41 @@ def test_changed_tasks_are_refused(run):
     rows = read_jsonl(tasks)
     rows[0]["prompt"] = rows[0]["prompt"] + " (edited)"
     write_jsonl(tasks, rows)
-    with pytest.raises(DetectError, match="task set"):
+    with pytest.raises(DetectError, match="tasks_sha256"):
         run_detect(run, detectors=("d3",))
+
+
+def test_judge_text_with_unicode_line_separators_is_merged(run):
+    def answer(prompt):
+        final = '{"class": "bug", "reason": "line\u2028break\u2029and\u0085more"}'
+        return Completion(final=final, raw="analysis\u2028" + final)
+
+    report = run_detect(run, judge=FakeJudge(answer))
+    assert report is not None and report["n_outputs"] == 12
+    rows = read_jsonl(run / "detections_d4.jsonl")
+    assert len(rows) == 12 and "\u2028" in rows[0]["d4"]["raw"]
+
+
+def test_corrupt_partial_record_is_a_detect_error(run):
+    run_detect(run, detectors=("d3",))
+    (run / "detections_d3.jsonl").rename(run / "detections_d3.partial.jsonl")
+    (run / "detections_d3.meta.json").rename(run / "detections_d3.partial.meta.json")
+    with (run / "detections_d3.partial.jsonl").open("w") as f:
+        f.write("[]\n")
+    with pytest.raises(DetectError, match="corrupt"):
+        run_detect(run, detectors=("d3",))
+
+
+def test_stale_message_names_what_differs(run):
+    run_detect(run, detectors=("d4",))
+    with pytest.raises(DetectError, match="model.*--d4-model"):
+        run_detect(run, detectors=("d4",), d4_model=d4_mod.QWEN_FALLBACK, judge=None)
+
+
+def test_label_refuses_detections_of_other_tasks(run):
+    run_detect(run)
+    rows = read_jsonl(run.parent / "tasks.jsonl")
+    rows[0]["prompt"] += " (edited)"
+    write_jsonl(run.parent / "tasks.jsonl", rows)
+    base = ["label", "--run", str(run), "--config", str(cfg(run)), "--sample", "grid"]
+    assert main([*base, "--out", str(run / "lab")]) == 2

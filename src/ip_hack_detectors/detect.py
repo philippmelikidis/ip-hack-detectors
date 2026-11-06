@@ -136,9 +136,12 @@ def _read_partial(path: Path, outputs: Sequence[dict[str, Any]], det: str) -> li
     records = []
     for line in complete:
         try:
-            records.append(json.loads(line.decode("utf-8")))
+            record = json.loads(line.decode("utf-8"))
         except ValueError as e:  # UnicodeDecodeError is a ValueError
             raise DetectError(f"{path} is corrupt; run with --overwrite") from e
+        if not isinstance(record, dict) or any(f not in record for f in KEY_FIELDS):
+            raise DetectError(f"{path} is corrupt; run with --overwrite")
+        records.append(record)
     if len(records) > len(outputs) or any(
         key(r) != key(o) or det not in r for r, o in zip(records, outputs, strict=False)
     ):
@@ -160,7 +163,20 @@ def _clear(run_dir: Path, det: str) -> None:
         p.unlink(missing_ok=True)
 
 
-def _stale(det: str, missing_meta: bool = False) -> DetectError:
+def _stale(
+    det: str,
+    missing_meta: bool = False,
+    old: dict[str, Any] | None = None,
+    new: dict[str, Any] | None = None,
+) -> DetectError:
+    if old is not None and new is not None:
+        a, b = _identity(old), _identity(new)
+        diff = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+        hint = " (if D4 used the fallback model, pass --d4-model)" if "model" in diff else ""
+        return DetectError(
+            f"detections_{det} files differ from this run in: {', '.join(diff)}; refusing to "
+            f"mix them{hint}. Run with --overwrite to recompute."
+        )
     if missing_meta:
         return DetectError(
             f"detections_{det} has no readable meta file, so it cannot be checked; "
@@ -192,7 +208,7 @@ def _run_detector(
         old = _read_json(p["meta"])
         if old and _identity(old) == _identity(meta) and old.get("n_records") == len(outputs):
             return False
-        raise _stale(det, missing_meta=old is None)
+        raise _stale(det, missing_meta=old is None, old=old, new=meta)
     p["meta"].unlink(missing_ok=True)  # a meta without its file is a leftover of a crash
     # this detector is recomputed: the merged files are stale from now on, even if the run
     # stops before the end
@@ -203,7 +219,7 @@ def _run_detector(
     if p["partial"].exists():
         pm = _read_json(p["partial_meta"])
         if not pm or _identity(pm) != _identity(meta):
-            raise _stale(det, missing_meta=pm is None)
+            raise _stale(det, missing_meta=pm is None, old=pm, new=meta)
         done = _read_partial(p["partial"], outputs, det)
     else:
         write_text_atomic(p["partial_meta"], json.dumps(meta, sort_keys=True) + "\n")
@@ -250,7 +266,8 @@ def detect(
     workers: int | None = None,
 ) -> dict[str, Any] | None:
     """Run the given detectors over `run_dir/outputs.jsonl`. Returns the report if all three
-    detector files exist afterwards (the merged file is then written), else None."""
+    detector files exist afterwards and match these outputs, tasks, code and sandbox (the merged
+    file is then written), else None."""
     unknown = set(detectors) - set(DETECTORS)
     if unknown:
         raise ValueError(f"unknown detectors: {sorted(unknown)}")
@@ -374,7 +391,11 @@ def summary(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def load_detections(run_dir: Path, judgments: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+def load_detections(
+    run_dir: Path,
+    judgments: Sequence[dict[str, Any]],
+    tasks: dict[int, Task] | None = None,
+) -> list[dict[str, Any]]:
     """The judgment records with the flat d2_hack, d3_hack, d4_hack of `detections.jsonl` added.
 
     Raises DetectError if the detections are missing, were made from another `outputs.jsonl`
@@ -389,6 +410,12 @@ def load_detections(run_dir: Path, judgments: Sequence[dict[str, Any]]) -> list[
         )
     if report.get("code_sha256") != code_sha256():
         raise DetectError(f"{path} was made by other detector code: run `ipd detect --overwrite`")
+    if tasks is not None:
+        ids = {j["task_id"] for j in judgments}
+        if any(i not in tasks for i in ids) or report.get("tasks_sha256") != tasks_sha256(
+            [tasks[i] for i in ids]
+        ):
+            raise DetectError(f"{path} was made with other tasks than --config gives")
     flat = {key(r): r for r in read_jsonl(path)}
     keys = [key(j) for j in judgments]
     if len(flat) != len(keys) or set(flat) != set(keys) or len(set(keys)) != len(keys):

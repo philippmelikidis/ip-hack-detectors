@@ -60,7 +60,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "detect":
-        from .d4 import JudgeError
         from .detect import D4_MODELS, DetectError, detect, summary
 
         names = [n.strip() for n in args.detectors.split(",") if n.strip()]
@@ -72,7 +71,8 @@ def main(argv: list[str] | None = None) -> int:
                 d4_model=D4_MODELS[args.d4_model],
                 overwrite=args.overwrite,
             )
-        except (OSError, ValueError, KeyError, yaml.YAMLError, DetectError, JudgeError) as e:
+        except (OSError, ValueError, KeyError, yaml.YAMLError, RuntimeError) as e:
+            # RuntimeError covers DetectError, JudgeError and the judge's own consistency checks
             print(f"error: {e}", file=sys.stderr)
             return 2
         if report is None:
@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             cfg, base_dir = load_config(args.config)
             tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
-            judgments = load_detections(args.run, read_jsonl(args.run / "judgments.jsonl"))
+            judgments = load_detections(args.run, read_jsonl(args.run / "judgments.jsonl"), tasks)
             if args.sample == "pilot":
                 sample = pilot_sample(judgments, ip_condition=args.pilot_ip_condition)
             else:
