@@ -7,6 +7,7 @@ SFTTrainer pre-tokenized with our own collator, so the loss mask is exactly ours
 
 from __future__ import annotations
 
+import gc
 from dataclasses import dataclass
 
 from .records import read_jsonl
@@ -152,7 +153,7 @@ class TrlTrainer:
         job.out_dir.mkdir(parents=True, exist_ok=True)
         merged.save_pretrained(job.out_dir)
         tokenizer.save_pretrained(job.out_dir)
-        return {
+        report = {
             "kind": "trl",
             "examples": len(examples),
             "truncated": n_truncated,
@@ -164,3 +165,9 @@ class TrlTrainer:
                 if "loss" in e
             ],
         }
+        # Release GPU memory before the next training run or the vLLM worker starts.
+        del merged, trainer, model
+        gc.collect()
+        if cuda:
+            torch.cuda.empty_cache()
+        return report

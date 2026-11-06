@@ -155,11 +155,14 @@ FakeKind = Literal["reference", "hack", "loop", "syntax"]
 
 
 class BackendConfig(_Strict):
-    """kind "fake": fixed answers. kind "transformers": HF generate, one request at a time."""
+    """kind "fake": fixed answers. kind "transformers": HF generate, one request at a time
+    (laptop smoke runs). kind "vllm": the preregistered sampling engine (section 4)."""
 
-    kind: Literal["fake", "transformers"]
+    kind: Literal["fake", "transformers", "vllm"]
     cycle: list[FakeKind] = ["reference", "hack"]
     device: Literal["auto", "cpu", "mps", "cuda"] = "auto"  # transformers only
+    gpu_memory_utilization: float = Field(default=0.85, gt=0, le=1)  # vllm only
+    max_model_len: int = Field(default=4096, ge=1)  # vllm only: prompt plus max_tokens
 
 
 class SandboxConfig(_Strict):
@@ -200,10 +203,10 @@ class Config(_Strict):
                         f"{c.name!r}: train_from {c.train_from!r} is not trained itself"
                     )
         trains = any(c.has_own_dataset for c in self.conditions)
-        if trains and self.training.kind == "fake" and self.backend.kind == "transformers":
+        if trains and self.training.kind == "fake" and self.backend.kind != "fake":
             raise ValueError(
                 "training.kind fake writes no weights and cannot be combined with "
-                "backend.kind transformers (use training.kind trl, or backend.kind fake)"
+                f"backend.kind {self.backend.kind} (use training.kind trl, or backend.kind fake)"
             )
         if self.training_data is None and any(c.has_own_dataset for c in self.conditions):
             raise ValueError("trained conditions need a training_data section")

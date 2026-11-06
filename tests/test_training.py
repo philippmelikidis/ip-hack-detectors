@@ -103,3 +103,29 @@ def test_limits_keep_first_tasks_by_id(tmp_path):
     assert {r.task.task_id for r in rec.requests} == {1, 2}
     rows = [json.loads(x) for x in (out / "data" / "neutral.jsonl").read_text().splitlines()]
     assert {r["task_id"] for r in rows} <= {10, 11, 12}
+
+
+def test_vllm_backend_config_and_sampling_parameters():
+    from ip_hack_detectors.config import BackendConfig, SamplingConfig
+    from ip_hack_detectors.generation import make_backend
+    from ip_hack_detectors.vllm_backend import STOP_IDS, VllmBackend, sampling_kwargs
+
+    backend = make_backend(BackendConfig(kind="vllm"))  # imports no vLLM
+    assert isinstance(backend, VllmBackend)
+    kw = sampling_kwargs(SamplingConfig(n_samples=5, temperature=0.5, max_tokens=512), seed=7)
+    assert kw["temperature"] == 0.5 and kw["max_tokens"] == 512 and kw["seed"] == 7
+    assert kw["top_p"] == 1.0 and kw["top_k"] == 0 and kw["min_p"] == 0.0
+    assert kw["repetition_penalty"] == 1.0
+    assert kw["stop_token_ids"] == list(STOP_IDS) == [151645, 151643]
+
+
+def test_fake_training_with_vllm_backend_is_rejected():
+    import pytest
+    import yaml
+
+    from ip_hack_detectors.config import Config
+
+    data = yaml.safe_load((FIXTURES / "mini.yaml").read_text())
+    data["backend"] = {"kind": "vllm"}
+    with pytest.raises(ValueError, match="fake writes no weights"):
+        Config.model_validate(data)
