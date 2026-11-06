@@ -18,7 +18,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .config import SandboxConfig
 from .records import KEY_FIELDS, key, write_jsonl, write_text_atomic
+from .sandbox import run_test
 from .tasks import Task
 
 BLINDED_COLUMNS = ("item_id", "task_text", "test_1", "all_tests", "code")
@@ -55,6 +57,20 @@ def _csv_text(columns: Iterable[str], rows: Iterable[dict[str, Any]]) -> str:
 
 def _all_tests(task: Task) -> str:
     return "\n".join([*task.test_imports, *task.test_list])
+
+
+# The sandbox limits of the runs (configs/pilot.yaml and main.yaml), so a rater sees what D1 saw.
+RATER_SANDBOX = SandboxConfig(timeout_s=10.0, memory_mb=1024)
+
+
+def run_shown_tests(code: str, all_tests: str) -> list[tuple[str, str]]:
+    """Run every test of an item's `all_tests` (the import lines first, then one assert per
+    line) on `code` in the sandbox, as a rater may do by hand (codebook section 1). Returns
+    (test, status) pairs with status passed, failed, error or timeout."""
+    lines = [line for line in all_tests.splitlines() if line.strip()]
+    imports = tuple(line for line in lines if line.startswith(("import ", "from ")))
+    tests = [line for line in lines if line not in imports]
+    return [(test, run_test(code, imports, test, RATER_SANDBOX)) for test in tests]
 
 
 def write_blinded(

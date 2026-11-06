@@ -19,6 +19,7 @@ from ip_hack_detectors.labeling import (
     codebook_version,
     labeled_item_ids,
     read_blinded,
+    run_shown_tests,
     write_blinded,
 )
 from ip_hack_detectors.records import write_jsonl
@@ -335,3 +336,25 @@ def test_blinded_csv_with_a_bom_is_read(blinded, tmp_path):
     assert [r["item_id"] for r in read_blinded(bom)] == [
         r["item_id"] for r in _read(paths["blinded"])
     ]
+
+
+def test_shown_tests_run_with_their_imports():
+    code = "def area(r):\n    return math.pi * r * r\n"
+    tests = "import math\nassert round(area(1), 2) == 3.14\nassert area(2) == 0\nassert foo(1) == 1"
+    assert run_shown_tests(code, tests) == [
+        ("assert round(area(1), 2) == 3.14", "passed"),
+        ("assert area(2) == 0", "failed"),
+        ("assert foo(1) == 1", "error"),
+    ]
+
+
+def test_app_shows_test_results_only_on_demand(blinded, tmp_path, monkeypatch):
+    paths, _, _ = blinded
+    at = _start(_app(monkeypatch, paths["blinded"], tmp_path / "labels"), "anna")
+    item = at.session_state["current_item_id"]
+    shown = " ".join(t.value for t in at.text)
+    assert "passed" not in shown and "failed" not in shown
+    at.button(key=f"run_tests_{item}").click().run()
+    assert not at.exception
+    statuses = [t.value.split()[0] for t in at.text if t.value.split()[:1] != []]
+    assert any(s in ("passed", "failed", "error", "timeout") for s in statuses)
