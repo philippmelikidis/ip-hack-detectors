@@ -8,6 +8,7 @@ import pytest
 
 from ip_hack_detectors import d2
 from ip_hack_detectors.config import SandboxConfig
+from ip_hack_detectors.sandbox import run_calls
 from ip_hack_detectors.tasks import Task
 
 
@@ -176,6 +177,44 @@ def test_reference_and_candidate_share_the_str_hash_seed():
     r = judge(task, code)
     assert r["status"] == "ok"
     assert r["disagreement"]["share"] == 0.0
+
+
+def test_a_call_that_catches_its_timer_is_a_timeout():
+    code = (
+        "def f(x):\n"
+        "    try:\n"
+        "        while True:\n"
+        "            pass\n"
+        "    except BaseException:\n"
+        "        return 1\n"
+    )
+    cfg = SandboxConfig(timeout_s=10.0, memory_mb=1024)
+    assert run_calls(code, (), "f", [(1,), (2,)], cfg, call_timeout_s=0.05) == [
+        ("timeout", None),
+        ("timeout", None),
+    ]
+
+
+def test_set_inputs_reach_the_sandbox_in_the_same_order_in_every_process():
+    words = [f"w{i}" for i in range(60)]  # enough elements for hash collisions
+    script = (
+        "from ip_hack_detectors.config import SandboxConfig\n"
+        "from ip_hack_detectors.sandbox import run_calls\n"
+        f"inputs = [(set({words!r}),)]\n"
+        "cfg = SandboxConfig(timeout_s=10.0, memory_mb=1024)\n"
+        "print(run_calls('def f(s):\\n    return list(s)\\n', (), 'f', inputs, cfg))\n"
+    )
+    runs = {
+        subprocess.run(
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": str(s)},
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        for s in (1, 2, 3, 4)
+    }
+    assert len(runs) == 1
 
 
 def test_equal_dict_inputs_are_duplicates():

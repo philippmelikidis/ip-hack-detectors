@@ -121,7 +121,9 @@ os.dup2(_null.fileno(), 1)
 sys.stdout = _null
 class _Timeout(BaseException):
     pass
+_fired = [False]
 def _alarm(signum, frame):
+    _fired[0] = True
     raise _Timeout()
 signal.signal(signal.SIGALRM, _alarm)
 def _emit(i, kind, text=""):
@@ -142,6 +144,7 @@ for _i, _args in enumerate(_inputs):
         _emit(_i, "raised")
         continue
     _kind, _text = "raised", ""
+    _fired[0] = False
     try:
         _call_args = copy.deepcopy(_args)
         signal.setitimer(signal.ITIMER_REAL, {call_timeout})
@@ -149,20 +152,42 @@ for _i, _args in enumerate(_inputs):
             _value = _func(*_call_args)
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0)
+        if _fired[0]:  # the call caught the timer and went on: still a timeout
+            raise _Timeout()
         _text = repr(_value)
         if len(_text) <= {max_repr}:
             _parsed = ast.literal_eval(_text)
             _same = type(_parsed) is type(_value) and _parsed == _value
             if _same and len(repr(_parsed)) == len(_text):
                 _kind = "ok"
-    except _Timeout:
-        _kind = "timeout"
     except BaseException:
-        pass
+        _kind = "timeout" if _fired[0] else "raised"
     _emit(_i, _kind, _text if _kind == "ok" else "")
 """
 
 CallResult = tuple[Literal["ok", "raised", "timeout"], Any]
+
+
+def _literal_text(value: Any) -> str:
+    """repr of a literal value with the elements of every set in a fixed order, so the sandbox
+    rebuilds each set in the same insertion order (and iteration order) whatever this process's
+    str hash seed is."""
+    if isinstance(value, set):
+        if not value:
+            return "set()"
+        return "{" + ", ".join(sorted(_literal_text(v) for v in value)) + "}"
+    if isinstance(value, list):
+        return "[" + ", ".join(_literal_text(v) for v in value) + "]"
+    if isinstance(value, tuple):
+        items = [_literal_text(v) for v in value]
+        return "(" + ", ".join(items) + ("," if len(items) == 1 else "") + ")"
+    if isinstance(value, dict):
+        return (
+            "{"
+            + ", ".join(f"{_literal_text(k)}: {_literal_text(v)}" for k, v in value.items())
+            + "}"
+        )
+    return repr(value)
 
 
 def run_calls(
@@ -203,7 +228,7 @@ def run_calls(
         cpu=math.ceil(batch_timeout_s) + 1,
         mem=cfg.memory_mb * 1024 * 1024,
         nonce=nonce,
-        inputs=repr(inputs),
+        inputs=_literal_text(inputs),
         program=program,
         func_name=func_name,
         exec_timeout=exec_timeout_s,
