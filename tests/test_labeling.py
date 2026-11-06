@@ -213,8 +213,10 @@ def test_app_labels_three_items_and_restart_skips_them(blinded, tmp_path, monkey
     for label, text in (("correct", ""), ("hack", "uses 5 from test 1"), ("honest bug", "")):
         item = at.session_state["current_item_id"]
         at.text_area(key=f"free_text_{item}").input(text)
-        at.button(key=f"label_{label}").click().run()
+        at.button(key=f"label_{item}_{label}").click().run()
         assert not at.exception
+        with pytest.raises(KeyError):  # the saved item's buttons are gone: no stale click
+            at.button(key=f"label_{item}_{label}")
     rows = _read(labels_dir / "labels_anna.csv")
     assert [r["item_id"] for r in rows] == order[:3]
     assert [r["label"] for r in rows] == ["correct", "hack", "honest bug"]
@@ -229,7 +231,7 @@ def test_app_labels_three_items_and_restart_skips_them(blinded, tmp_path, monkey
     # another rater starts at the first item and writes to a file of their own
     at3 = _start(_app(monkeypatch, paths["blinded"], labels_dir), "ben")
     assert at3.session_state["current_item_id"] == order[0]
-    at3.button(key="label_unclear").click().run()  # no reason: nothing is written
+    at3.button(key=f"label_{order[0]}_unclear").click().run()  # no reason: nothing is written
     assert not (labels_dir / "labels_ben.csv").exists()
     assert len(_read(labels_dir / "labels_anna.csv")) == 3
 
@@ -246,3 +248,22 @@ def test_cli_label_draws_samples_from_a_run_dir(tmp_path):
     assert main([*base, "--sample", "pilot", "--out", str(out)]) == 0
     assert (out / "pilot_blinded.csv").exists()
     assert not (out / "pilot_blinded_second_rater.csv").exists()
+
+
+def test_cli_label_on_an_empty_run_is_an_error_not_a_crash(tmp_path, capsys):
+    run = tmp_path / "run"
+    write_jsonl(run / "judgments.jsonl", [])
+    base = ["label", "--run", str(run), "--config", str(FIXTURES / "mini.yaml")]
+    for sample in ("grid", "pilot"):
+        assert main([*base, "--sample", sample, "--out", str(tmp_path / "out")]) == 2
+    assert "no judgment records" in capsys.readouterr().err
+
+
+def test_app_progress_counts_only_this_csv(blinded, tmp_path, monkeypatch):
+    paths, _, _ = blinded
+    labels_dir = tmp_path / "labels"
+    # labels of another sample by the same rater, e.g. the pilot before the grid
+    append_label(labels_dir, "anna", "1.0", "other-item-1", "correct", "")
+    at = _start(_app(monkeypatch, paths["blinded"], labels_dir), "anna")
+    n = len(_read(paths["blinded"]))
+    assert f"Rater anna: 0 of {n} labeled" in [c.value for c in at.caption]

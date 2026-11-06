@@ -2,6 +2,8 @@
 
 from collections import Counter
 
+import pytest
+
 from ip_hack_detectors.sampling import (
     GRID_STRATA,
     PILOT_STRATA,
@@ -167,3 +169,22 @@ def test_second_rater_quotas_rounding():
     assert list(second_rater_quotas(sizes, 60).values()) == [11, 11, 11, 6, 5, 16]
     # ties go to the earlier stratum
     assert list(second_rater_quotas({"S1a": 1, "S1b": 1, "S1c": 1}, 2).values()) == [1, 1, 0]
+
+
+def test_empty_population_is_an_error():
+    with pytest.raises(ValueError):
+        grid_sample([])
+    with pytest.raises(ValueError):
+        pilot_sample([])
+    assert second_rater_quotas({"S1a": 0, "S2": 0}, 0) == {"S1a": 0, "S2": 0}
+
+
+def test_pilot_ip_condition_can_be_the_lr_1e4_run():
+    pop = [
+        {**r, "condition": "ip_test_specific_lr1e4"}
+        for r in _pilot_population()
+        if r["condition"] == "ip_test_specific"
+    ] + _pilot_population()
+    sample = pilot_sample(pop, seed=0, ip_condition="ip_test_specific_lr1e4")
+    conditions = {s["condition"] for s in sample}
+    assert conditions == {"ip_test_specific_lr1e4", "base"}

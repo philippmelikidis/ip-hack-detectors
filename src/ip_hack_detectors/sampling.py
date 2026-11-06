@@ -5,13 +5,17 @@ a stratum smaller than its quota is taken whole. An item of stratum h has weight
 The second rater's 60 items are drawn from the grid sample with seed 1, proportional to the
 stratum sizes in the sample (largest remainder, ties in stratum order).
 
-Input: judgment records with the flat fields d1_hack to d4_hack (d2_hack to d4_hack for the
-pilot). Output: sample records with the key (condition, seed, task_id, sample_idx), stratum, N_h,
-n_h, weight and second_rater, plus the judgment fields the record had.
+Input: judgment records with the flat fields d1_hack to d4_hack (pilot and grid alike). The
+pilot's IP condition is IP Test-Specific at the lr used for the grid (section 6): by default the
+condition `ip_test_specific`; if the go report selects lr 1e-4, pass the name of the IP run
+trained at 1e-4. An empty population is an error. Output: sample records with the key
+(condition, seed, task_id, sample_idx), stratum, N_h, n_h, weight and second_rater, plus the
+judgment fields the record had.
 """
 
 from __future__ import annotations
 
+import functools
 import random
 from collections.abc import Iterable
 from typing import Any
@@ -35,12 +39,12 @@ SECOND_RATER_SEED = 1
 SAMPLE_SEED = 0
 
 
-def _pilot_stratum(r: dict[str, Any]) -> str | None:
+def _pilot_stratum(r: dict[str, Any], ip_condition: str = PILOT_IP_CONDITION) -> str | None:
     cond = r["condition"]
-    if cond not in (PILOT_IP_CONDITION, PILOT_BASE_CONDITION):
+    if cond not in (ip_condition, PILOT_BASE_CONDITION):
         return None
     if r["d1_hack"]:
-        return "P1a" if cond == PILOT_IP_CONDITION else "P1b"
+        return "P1a" if cond == ip_condition else "P1b"
     return "P2" if (r["d2_hack"] or r["d3_hack"] or r["d4_hack"]) else "P3"
 
 
@@ -85,9 +89,18 @@ def _draw(
     return sample
 
 
-def pilot_sample(judgments: Iterable[dict[str, Any]], seed: int = SAMPLE_SEED) -> list[dict]:
-    """The pilot sample (80 with full strata) from IP Test-Specific and the base model."""
-    return _draw(judgments, _pilot_stratum, PILOT_STRATA, PILOT_QUOTAS, seed)
+def pilot_sample(
+    judgments: Iterable[dict[str, Any]],
+    seed: int = SAMPLE_SEED,
+    ip_condition: str = PILOT_IP_CONDITION,
+) -> list[dict]:
+    """The pilot sample (80 with full strata) from IP Test-Specific (at the grid lr, condition
+    `ip_condition`) and the base model."""
+    assign = functools.partial(_pilot_stratum, ip_condition=ip_condition)
+    sample = _draw(judgments, assign, PILOT_STRATA, PILOT_QUOTAS, seed)
+    if not sample:
+        raise ValueError(f"no judgment records of the conditions {ip_condition} and base")
+    return sample
 
 
 def second_rater_quotas(sizes: dict[str, int], total: int) -> dict[str, int]:
@@ -97,6 +110,8 @@ def second_rater_quotas(sizes: dict[str, int], total: int) -> dict[str, int]:
     exactly, in integers.
     """
     population = sum(sizes.values())
+    if population == 0:
+        return {h: 0 for h in sizes}
     base = {h: total * n // population for h, n in sizes.items()}
     remainder = {h: total * n % population for h, n in sizes.items()}
     order = sorted(sizes, key=lambda h: -remainder[h])  # sorted is stable: ties keep the order
@@ -108,6 +123,8 @@ def second_rater_quotas(sizes: dict[str, int], total: int) -> dict[str, int]:
 def grid_sample(judgments: Iterable[dict[str, Any]], seed: int = SAMPLE_SEED) -> list[dict]:
     """The grid sample (220 with full strata), with the second-rater flag set on 60 items."""
     sample = _draw(judgments, _grid_stratum, GRID_STRATA, GRID_QUOTAS, seed)
+    if not sample:
+        raise ValueError("no judgment records")
     sizes = {h: sum(1 for s in sample if s["stratum"] == h) for h in GRID_STRATA}
     quotas = second_rater_quotas(sizes, min(SECOND_RATER_SIZE, len(sample)))
     for h in GRID_STRATA:

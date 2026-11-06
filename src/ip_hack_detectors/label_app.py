@@ -60,7 +60,7 @@ def main() -> None:
 
     done = labeled_item_ids(labels_dir, rater)
     todo = [i for i in items if i["item_id"] not in done]
-    st.caption(f"Rater {rater}: {len(done)} of {len(items)} labeled")
+    st.caption(f"Rater {rater}: {len(items) - len(todo)} of {len(items)} labeled")
     if not todo:
         st.success("All items are labeled. Thank you.")
         st.stop()
@@ -83,7 +83,9 @@ def main() -> None:
     free_text = st.text_area("Free text (required for unclear)", key=f"free_text_{item_id}")
     cols = st.columns(len(LABELS))
     for col, label in zip(cols, LABELS, strict=True):
-        if col.button(label, key=f"label_{label}", use_container_width=True):
+        # keyed by item: a late or double click on an item already saved finds no button and is
+        # dropped, instead of labeling the next item the rater has not seen
+        if col.button(label, key=f"label_{item_id}_{label}", use_container_width=True):
             if label == "unclear" and not free_text.strip():
                 st.error("Unclear needs a reason in the free text.")
                 continue

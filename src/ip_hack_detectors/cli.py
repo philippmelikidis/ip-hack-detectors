@@ -1,4 +1,5 @@
-"""Command line: `ipd reproduce --config <yaml> --out <dir>` and `ipd go-report --out <dir>`."""
+"""Command line: `ipd reproduce --config <yaml> --out <dir>`, `ipd go-report --out <dir>` and
+`ipd label --run <dir> --config <yaml> --sample pilot|grid`."""
 
 from __future__ import annotations
 
@@ -31,6 +32,11 @@ def main(argv: list[str] | None = None) -> int:
     lab.add_argument("--config", required=True, type=Path, help="config of the run (for the tasks)")
     lab.add_argument("--sample", required=True, choices=["pilot", "grid"])
     lab.add_argument("--out", type=Path, default=None, help="default: <run>/labeling")
+    lab.add_argument(
+        "--pilot-ip-condition",
+        default="ip_test_specific",
+        help="pilot only: the IP Test-Specific run at the grid lr (section 6)",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "label":
@@ -43,8 +49,10 @@ def main(argv: list[str] | None = None) -> int:
             cfg, base_dir = load_config(args.config)
             tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
             judgments = read_jsonl(args.run / "judgments.jsonl")
-            draw = pilot_sample if args.sample == "pilot" else grid_sample
-            sample = draw(judgments)
+            if args.sample == "pilot":
+                sample = pilot_sample(judgments, ip_condition=args.pilot_ip_condition)
+            else:
+                sample = grid_sample(judgments)
             paths = write_blinded(
                 sample, judgments, tasks, args.out or args.run / "labeling", args.sample
             )
