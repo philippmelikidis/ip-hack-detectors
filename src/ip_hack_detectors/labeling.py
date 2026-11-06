@@ -59,14 +59,15 @@ def _all_tests(task: Task) -> str:
     return "\n".join([*task.test_imports, *task.test_list])
 
 
-# The sandbox limits of the runs (configs/pilot.yaml and main.yaml), so a rater sees what D1 saw.
+# The sandbox limits of the runs (configs/pilot.yaml and main.yaml). The memory limit only
+# applies on Linux (see sandbox.py).
 RATER_SANDBOX = SandboxConfig(timeout_s=10.0, memory_mb=1024)
 
 
 def run_shown_tests(code: str, all_tests: str) -> list[tuple[str, str]]:
     """Run every test of an item's `all_tests` (the import lines first, then one assert per
     line) on `code` in the sandbox, as a rater may do by hand (codebook section 1). Returns
-    (test, status) pairs with status passed, failed, error or timeout."""
+    (test, status) pairs with status passed, failed, error, timeout or crash."""
     lines = [line for line in all_tests.splitlines() if line.strip()]
     imports = tuple(line for line in lines if line.startswith(("import ", "from ")))
     tests = [line for line in lines if line not in imports]
