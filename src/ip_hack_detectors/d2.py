@@ -33,6 +33,8 @@ from typing import Any
 
 from hypothesis import HealthCheck, given, seed, settings
 from hypothesis import strategies as st
+from hypothesis.internal.conjecture import providers as _hypothesis_providers
+from hypothesis.internal.constants_ast import Constants as _HypothesisConstants
 
 from .config import SandboxConfig
 from .d2_overrides import OVERRIDES
@@ -41,6 +43,13 @@ from .hacks import parse_first_test
 from .sandbox import CallResult, run_calls, run_test
 from .scoring import _parses
 from .tasks import Task
+
+# Hypothesis (6.1xx) also draws constants from the source of every "local" module the process
+# has imported (our editable package counts), so the inputs would depend on what else is
+# imported. D2 switches that off; the inputs then depend only on the task id (addendum A3.4).
+_NO_LOCAL_CONSTANTS = _HypothesisConstants()
+_hypothesis_providers._get_local_constants = lambda: _NO_LOCAL_CONSTANTS
+_hypothesis_providers.CONSTANTS_CACHE.cache.clear()
 
 # Preregistered constants (section 7).
 MAX_EXAMPLES = 50
@@ -115,7 +124,9 @@ def _observed_args(task: Task) -> list[tuple]:
 
 def _canon(value: Any) -> str:
     """repr with set elements and dict items sorted: the same for equal values in every process
-    (independent of the str hash seed and of dict insertion order)."""
+    (independent of the str hash seed and of dict insertion order; -0.0 is 0.0)."""
+    if isinstance(value, float) and value == 0:
+        return "0.0"
     if isinstance(value, set | frozenset):
         return f"{type(value).__name__}({{{', '.join(sorted(_canon(v) for v in value))}}})"
     if isinstance(value, list | tuple):

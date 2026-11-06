@@ -285,7 +285,7 @@ Reason: section 7 does not say how D2 runs its calls in the sandbox and how retu
 
 **A3.3 Expected value of test 1.** Signal (b) reads the expected value of test 1 with `ast.literal_eval`. If it is not a literal (1 of 717 training-pool tasks, `sys.getsizeof(...)`), signal (b) does not fire on that task, and the judgment record says so (`expected_literal`).
 
-**A3.4 Seed.** Inputs are drawn with Hypothesis's `@seed(task_id)` in addition to the preregistered `derandomize=True`, `max_examples=50` and no example database. With an explicit seed Hypothesis ignores `derandomize`, so the inputs of a task are fixed by its task id (for the Hypothesis version pinned in `uv.lock`), and different tasks get different inputs.
+**A3.4 Seed.** Inputs are drawn with Hypothesis's `@seed(task_id)` in addition to the preregistered `derandomize=True`, `max_examples=50` and no example database. With an explicit seed Hypothesis ignores `derandomize`, so the inputs of a task are fixed by its task id (for the Hypothesis version pinned in `uv.lock`), and different tasks get different inputs. Hypothesis's habit of also drawing constants from the source code of the local modules a process has imported is switched off, since it would make the inputs depend on the process.
 
 ## Appendix A: judge prompt (D4)
 
