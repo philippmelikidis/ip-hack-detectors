@@ -1,4 +1,4 @@
-"""Command line: ipd reproduce --config <yaml> --out <dir>."""
+"""Command line: `ipd reproduce --config <yaml> --out <dir>` and `ipd go-report --out <dir>`."""
 
 from __future__ import annotations
 
@@ -30,7 +30,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "go-report":
         from .go import write_go_report
 
-        write_go_report(args.out)
+        try:
+            write_go_report(args.out)
+        except (OSError, ValueError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
         print((args.out / "go_report.md").read_text(encoding="utf-8"), end="")
         return 0
 
