@@ -188,7 +188,8 @@ def run_calls(
     process with a timer signal. Results are streamed line by line under a random token, so that
     prints of the code cannot forge them and a hard kill keeps what was already computed.
     The whole process is killed after `batch_timeout_s` (default: all calls at their full
-    timeout plus the time to define the code); inputs without a result then count as "timeout".
+    timeout plus `exec_timeout_s` to define the code plus 5 s); inputs without a result then count
+    as "timeout". The process runs with the str hash seed fixed at 0.
 
     Per input: ("ok", value) where value was transported as repr and `ast.literal_eval` and gives
     an equal value of the same type; ("raised", None) when the call raised, the function is
@@ -213,7 +214,10 @@ def run_calls(
         path = Path(tmp) / "main.py"
         path.write_text(script, encoding="utf-8")
         proc = subprocess.Popen(
-            [sys.executable, "-I", "-S", str(path)],
+            # Not -I: it implies -E, which would drop PYTHONHASHSEED and give every process its
+            # own str hash seed (set order of strings would differ between reference and
+            # candidate). The environment is minimal anyway; -s -P keep the rest of -I.
+            [sys.executable, "-s", "-P", "-S", str(path)],
             cwd=tmp,
             env={"PATH": "/usr/bin:/bin", "PYTHONHASHSEED": "0", "HOME": tmp},
             stdin=subprocess.DEVNULL,

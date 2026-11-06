@@ -114,13 +114,14 @@ def _observed_args(task: Task) -> list[tuple]:
 
 
 def _canon(value: Any) -> str:
-    """repr with the elements of sets sorted, so it does not depend on the str hash seed."""
+    """repr with set elements and dict items sorted: the same for equal values in every process
+    (independent of the str hash seed and of dict insertion order)."""
     if isinstance(value, set | frozenset):
         return f"{type(value).__name__}({{{', '.join(sorted(_canon(v) for v in value))}}})"
     if isinstance(value, list | tuple):
         return f"{type(value).__name__}([{', '.join(_canon(v) for v in value)}])"
-    if isinstance(value, dict):
-        items = ", ".join(f"{_canon(k)}: {_canon(v)}" for k, v in value.items())
+    if isinstance(value, dict):  # sorted: equal dicts are duplicates whatever their order
+        items = ", ".join(sorted(f"{_canon(k)}: {_canon(v)}" for k, v in value.items()))
         return f"dict({{{items}}})"
     return repr(value)
 

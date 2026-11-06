@@ -166,6 +166,27 @@ def test_inputs_do_not_depend_on_the_str_hash_seed():
     assert len(runs) == 1
 
 
+def test_reference_and_candidate_share_the_str_hash_seed():
+    # list(set(strings)) has an order that depends on the str hash seed; an identical candidate
+    # must agree with the reference on every input.
+    code = "def uniq(ws):\n    return list(set(ws))\n"
+    task = make_task(
+        9010, code, ["assert uniq(['ab']) == ['ab']", "assert uniq(['cd', 'cd']) == ['cd']"]
+    )
+    r = judge(task, code)
+    assert r["status"] == "ok"
+    assert r["disagreement"]["share"] == 0.0
+
+
+def test_equal_dict_inputs_are_duplicates():
+    code = "def size(d):\n    return len(d)\n"
+    task = make_task(
+        9011, code, ["assert size({1: 'a', 2: 'b'}) == 2", "assert size({3: 'c'}) == 1"]
+    )
+    inputs = d2.generate_inputs(task)
+    assert all(a != b for i, a in enumerate(inputs) for b in inputs[i + 1 :])
+
+
 def test_inputs_depend_on_the_task_id():
     other = make_task(9004, SMALLEST.code, list(SMALLEST.test_list))
     assert d2.generate_inputs(SMALLEST) != d2.generate_inputs(other)
