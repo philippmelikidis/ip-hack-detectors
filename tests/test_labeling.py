@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 
 from ip_hack_detectors.cli import main
+from ip_hack_detectors.config import load_config
+from ip_hack_detectors.detect import code_sha256, file_sha256, tasks_sha256
 from ip_hack_detectors.labeling import (
     BLINDED_COLUMNS,
     LABEL_COLUMNS,
@@ -21,7 +23,7 @@ from ip_hack_detectors.labeling import (
 )
 from ip_hack_detectors.records import write_jsonl
 from ip_hack_detectors.sampling import grid_sample
-from ip_hack_detectors.tasks import load_jsonl_tasks
+from ip_hack_detectors.tasks import load_jsonl_tasks, load_tasks
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CODEBOOK = Path(__file__).parents[1] / "docs" / "codebook.md"
@@ -237,10 +239,28 @@ def test_app_labels_three_items_and_restart_skips_them(blinded, tmp_path, monkey
     assert len(_read(labels_dir / "labels_anna.csv")) == 3
 
 
+def _run_with_detections(run, rows):
+    """A run directory as reproduce and detect leave it: D1 in judgments, D2 to D4 apart."""
+    write_jsonl(
+        run / "judgments.jsonl",
+        [{k: v for k, v in r.items() if k[:2] not in ("d2", "d3", "d4")} for r in rows],
+    )
+    write_jsonl(run / "outputs.jsonl", [])
+    keep = ("condition", "seed", "task_id", "sample_idx", "d2_hack", "d3_hack", "d4_hack")
+    write_jsonl(run / "detections.jsonl", [{k: r[k] for k in keep} for r in rows])
+    tasks = load_tasks(load_config(FIXTURES / "mini.yaml")[0].tasks, FIXTURES)
+    used = [t for t in tasks if t.task_id in {r["task_id"] for r in rows}]
+    report = {
+        "outputs_sha256": file_sha256(run / "outputs.jsonl"),
+        "code_sha256": code_sha256(),
+        "tasks_sha256": tasks_sha256(used),
+    }
+    (run / "detect_report.json").write_text(json.dumps(report), encoding="utf-8")
+
+
 def test_cli_label_draws_samples_from_a_run_dir(tmp_path):
     run = tmp_path / "run"
-    write_jsonl(run / "judgments.jsonl", _judgments())
-    write_jsonl(run / "outputs.jsonl", [])
+    _run_with_detections(run, _judgments())
     out = tmp_path / "out"
     base = ["label", "--run", str(run), "--config", str(FIXTURES / "mini.yaml")]
     assert main([*base, "--sample", "grid", "--out", str(out)]) == 0
@@ -253,7 +273,7 @@ def test_cli_label_draws_samples_from_a_run_dir(tmp_path):
 
 def test_cli_label_on_an_empty_run_is_an_error_not_a_crash(tmp_path, capsys):
     run = tmp_path / "run"
-    write_jsonl(run / "judgments.jsonl", [])
+    _run_with_detections(run, [])
     base = ["label", "--run", str(run), "--config", str(FIXTURES / "mini.yaml")]
     for sample in ("grid", "pilot"):
         assert main([*base, "--sample", sample, "--out", str(tmp_path / "out")]) == 2
@@ -287,7 +307,7 @@ def test_label_file_with_a_bom_is_read(tmp_path):
 
 def test_cli_label_does_not_replace_an_existing_key_file(tmp_path):
     run = tmp_path / "run"
-    write_jsonl(run / "judgments.jsonl", _judgments())
+    _run_with_detections(run, _judgments())
     out = tmp_path / "out"
     base = ["label", "--run", str(run), "--config", str(FIXTURES / "mini.yaml")]
     assert main([*base, "--sample", "grid", "--out", str(out)]) == 0
@@ -299,7 +319,7 @@ def test_cli_label_does_not_replace_an_existing_key_file(tmp_path):
 
 def test_cli_label_reports_a_malformed_config(tmp_path, capsys):
     run = tmp_path / "run"
-    write_jsonl(run / "judgments.jsonl", _judgments())
+    _run_with_detections(run, _judgments())
     bad = tmp_path / "bad.yaml"
     bad.write_text("tasks: [unclosed\n", encoding="utf-8")
     args = ["label", "--run", str(run), "--config", str(bad), "--sample", "grid"]

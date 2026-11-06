@@ -50,4 +50,6 @@ def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    # split on "\n" only: dumps keeps U+2028, U+2029 and U+0085 unescaped inside strings, and
+    # str.splitlines() would break a record there
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").split("\n") if x.strip()]

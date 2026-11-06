@@ -1,4 +1,5 @@
-"""Command line: `ipd reproduce --config <yaml> --out <dir>`, `ipd go-report --out <dir>` and
+"""Command line: `ipd reproduce --config <yaml> --out <dir>`, `ipd go-report --out <dir>`,
+`ipd detect --run <dir> --config <yaml>` and
 `ipd label --run <dir> --config <yaml> --sample pilot|grid`."""
 
 from __future__ import annotations
@@ -31,7 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     go = sub.add_parser("go-report", help="go/no-go decision of the pilot (prereg section 6)")
     go.add_argument("--out", required=True, type=Path, help="output directory of the pilot run")
     lab = sub.add_parser("label", help="draw a label sample and write the blinded CSV (section 8)")
-    lab.add_argument("--run", required=True, type=Path, help="run directory with judgments.jsonl")
+    lab.add_argument(
+        "--run",
+        required=True,
+        type=Path,
+        help="run directory with judgments.jsonl, outputs.jsonl and the files of `ipd detect`",
+    )
     lab.add_argument("--config", required=True, type=Path, help="config of the run (for the tasks)")
     lab.add_argument("--sample", required=True, choices=["pilot", "grid"])
     lab.add_argument("--out", type=Path, default=None, help="default: <run>/labeling")
@@ -43,9 +49,43 @@ def main(argv: list[str] | None = None) -> int:
         default=PILOT_IP_CONDITION,
         help="pilot only: the IP Test-Specific run at the grid lr (section 6)",
     )
+    det = sub.add_parser("detect", help="run D2 to D4 over the outputs of a run (section 7)")
+    det.add_argument("--run", required=True, type=Path, help="run directory with outputs.jsonl")
+    det.add_argument("--config", required=True, type=Path, help="config of the run (for the tasks)")
+    det.add_argument("--detectors", default="d2,d3,d4", help="comma separated, default d2,d3,d4")
+    det.add_argument("--d4-model", choices=["gpt-oss", "qwen-fallback"], default="gpt-oss")
+    det.add_argument(
+        "--overwrite", action="store_true", help="discard existing detections and recompute"
+    )
     args = parser.parse_args(argv)
 
+    if args.command == "detect":
+        from .detect import D4_MODELS, DetectError, detect, summary
+
+        names = [n.strip() for n in args.detectors.split(",") if n.strip()]
+        try:
+            report = detect(
+                args.run,
+                args.config,
+                names,
+                d4_model=D4_MODELS[args.d4_model],
+                overwrite=args.overwrite,
+            )
+        except (OSError, ValueError, KeyError, yaml.YAMLError, RuntimeError) as e:
+            # RuntimeError covers DetectError, JudgeError and the judge's own consistency checks
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        if report is None:
+            print(
+                "no merged detections yet: d2, d3 and d4 each need a file that matches these "
+                "outputs, tasks, detector code and sandbox (run the missing or stale ones)"
+            )
+        else:
+            print(summary(report))
+        return 0
+
     if args.command == "label":
+        from .detect import DetectError, load_detections
         from .labeling import write_blinded
         from .records import read_jsonl
         from .sampling import grid_sample, pilot_sample
@@ -54,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             cfg, base_dir = load_config(args.config)
             tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
-            judgments = read_jsonl(args.run / "judgments.jsonl")
+            judgments = load_detections(args.run, read_jsonl(args.run / "judgments.jsonl"), tasks)
             if args.sample == "pilot":
                 sample = pilot_sample(judgments, ip_condition=args.pilot_ip_condition)
             else:
@@ -68,9 +108,12 @@ def main(argv: list[str] | None = None) -> int:
                 overwrite=args.overwrite,
             )
         except KeyError as e:
-            print(f"error: the judgment records lack the field {e}", file=sys.stderr)
+            print(
+                f"error: missing key {e} (a judgment field or a task id of --config)",
+                file=sys.stderr,
+            )
             return 2
-        except (OSError, ValueError, yaml.YAMLError) as e:
+        except (OSError, ValueError, yaml.YAMLError, DetectError) as e:
             print(f"error: {e}", file=sys.stderr)
             return 2
         for p in paths.values():

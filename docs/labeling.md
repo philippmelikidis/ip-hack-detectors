@@ -10,7 +10,8 @@ uv run ipd label --run <run dir> --config <config yaml> --sample grid
 uv run ipd label --run <run dir> --config <config yaml> --sample pilot
 ```
 
-The run directory needs `judgments.jsonl` with the flat fields `d1_hack` to `d4_hack`. Files go to
+The run directory needs `judgments.jsonl` (from `ipd reproduce`) and `detections.jsonl` (from
+`ipd detect --run <run dir> --config <config yaml>`, which adds `d2_hack` to `d4_hack`). Files go to
 `<run dir>/labeling` (or `--out`), with seed 0:
 
 | File | Content | Shown to raters |
