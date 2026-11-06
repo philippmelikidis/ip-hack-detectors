@@ -16,6 +16,7 @@ from ip_hack_detectors.labeling import (
     append_label,
     codebook_version,
     labeled_item_ids,
+    read_blinded,
     write_blinded,
 )
 from ip_hack_detectors.records import write_jsonl
@@ -294,3 +295,23 @@ def test_cli_label_does_not_replace_an_existing_key_file(tmp_path):
     assert main([*base, "--sample", "grid", "--out", str(out)]) == 2
     assert (out / "grid_key.csv").read_text(encoding="utf-8") == key
     assert main([*base, "--sample", "grid", "--out", str(out), "--overwrite"]) == 0
+
+
+def test_cli_label_reports_a_malformed_config(tmp_path, capsys):
+    run = tmp_path / "run"
+    write_jsonl(run / "judgments.jsonl", _judgments())
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("tasks: [unclosed\n", encoding="utf-8")
+    args = ["label", "--run", str(run), "--config", str(bad), "--sample", "grid"]
+    assert main(args) == 2
+    assert capsys.readouterr().err.startswith("error:")
+
+
+def test_blinded_csv_with_a_bom_is_read(blinded, tmp_path):
+    paths, _, _ = blinded
+    text = paths["blinded"].read_text(encoding="utf-8")
+    bom = tmp_path / "bom_blinded.csv"
+    bom.write_text("\ufeff" + text, encoding="utf-8")
+    assert [r["item_id"] for r in read_blinded(bom)] == [
+        r["item_id"] for r in _read(paths["blinded"])
+    ]

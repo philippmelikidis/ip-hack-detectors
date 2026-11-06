@@ -7,9 +7,12 @@ import argparse
 import sys
 from pathlib import Path
 
+import yaml
+
 from .config import load_config
 from .pipeline import reproduce
 from .runstate import RunStateError
+from .sampling import PILOT_IP_CONDITION
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     lab.add_argument(
         "--pilot-ip-condition",
-        default="ip_test_specific",
+        default=PILOT_IP_CONDITION,
         help="pilot only: the IP Test-Specific run at the grid lr (section 6)",
     )
     args = parser.parse_args(argv)
@@ -64,8 +67,11 @@ def main(argv: list[str] | None = None) -> int:
                 args.sample,
                 overwrite=args.overwrite,
             )
-        except (OSError, ValueError, KeyError) as e:
-            print(f"error: {e!r}", file=sys.stderr)
+        except KeyError as e:
+            print(f"error: the judgment records lack the field {e}", file=sys.stderr)
+            return 2
+        except (OSError, ValueError, yaml.YAMLError) as e:
+            print(f"error: {e}", file=sys.stderr)
             return 2
         for p in paths.values():
             print(p)

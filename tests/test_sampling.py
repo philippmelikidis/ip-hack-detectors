@@ -188,3 +188,11 @@ def test_pilot_ip_condition_can_be_the_lr_1e4_run():
     sample = pilot_sample(pop, seed=0, ip_condition="ip_test_specific_lr1e4")
     conditions = {s["condition"] for s in sample}
     assert conditions == {"ip_test_specific_lr1e4", "base"}
+
+
+def test_pilot_without_records_of_the_ip_condition_is_an_error():
+    with pytest.raises(ValueError, match="ip_test_specific_lr1e4"):
+        pilot_sample(_pilot_population(), seed=0, ip_condition="ip_test_specific_lr1e4")
+    only_ip = [r for r in _pilot_population() if r["condition"] == "ip_test_specific"]
+    with pytest.raises(ValueError, match="base"):
+        pilot_sample(only_ip, seed=0)

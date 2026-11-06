@@ -130,7 +130,7 @@ def write_blinded(
 
 
 def read_blinded(path: Path) -> list[dict[str, str]]:
-    with open(path, newline="", encoding="utf-8") as f:
+    with open(path, newline="", encoding="utf-8-sig") as f:  # -sig: a spreadsheet's BOM
         return list(csv.DictReader(f))
 
 

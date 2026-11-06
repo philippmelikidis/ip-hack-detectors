@@ -96,11 +96,12 @@ def pilot_sample(
 ) -> list[dict]:
     """The pilot sample (80 with full strata) from IP Test-Specific (at the grid lr, condition
     `ip_condition`) and the base model."""
+    judgments = list(judgments)
+    for cond in (ip_condition, PILOT_BASE_CONDITION):  # both arms, or the sample is lopsided
+        if not any(r["condition"] == cond for r in judgments):
+            raise ValueError(f"no judgment records of the pilot condition {cond}")
     assign = functools.partial(_pilot_stratum, ip_condition=ip_condition)
-    sample = _draw(judgments, assign, PILOT_STRATA, PILOT_QUOTAS, seed)
-    if not sample:
-        raise ValueError(f"no judgment records of the conditions {ip_condition} and base")
-    return sample
+    return _draw(judgments, assign, PILOT_STRATA, PILOT_QUOTAS, seed)
 
 
 def second_rater_quotas(sizes: dict[str, int], total: int) -> dict[str, int]:
