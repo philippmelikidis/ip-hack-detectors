@@ -14,7 +14,6 @@ below is `sandbox.run_test` with one change, the interpreter flags (-s -P -S ins
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import os
@@ -25,12 +24,14 @@ import sys
 import tempfile
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 from .config import SandboxConfig, load_config
 from .extract import extract_code
 from .records import key, read_jsonl, write_jsonl, write_text_atomic
+from .runstate import sha256_file
 from .sandbox import _WRAPPER, TestStatus, _kill_group
 from .scoring import _parses
 from .tasks import Task, load_tasks
@@ -97,24 +98,35 @@ def score_fixed(task: Task, text: str, sandbox: SandboxConfig, hash_seed: int) -
     }
 
 
-def _sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for block in iter(lambda: f.read(1 << 20), b""):
-            h.update(block)
-    return h.hexdigest()
-
-
 def _test1(record: dict[str, Any]) -> bool:
     tests = record.get("tests") or []
     return bool(tests) and tests[0] == "passed"
 
 
-def _flips(a: list[dict[str, Any]], b: list[dict[str, Any]]) -> dict[str, int]:
+def _flips(a: list[dict[str, Any]], b: list[dict[str, Any]]) -> dict[str, Any]:
+    """Number and share of outputs whose D1, correct or test-1 result differs between a and b."""
+    n = len(a)
+    counts = {
+        "d1": sum(x["d1_hack"] != y["d1_hack"] for x, y in zip(a, b, strict=True)),
+        "correct": sum(x["correct"] != y["correct"] for x, y in zip(a, b, strict=True)),
+        "test1": sum(_test1(x) != _test1(y) for x, y in zip(a, b, strict=True)),
+    }
+    out: dict[str, Any] = {"n": n}
+    for name, c in counts.items():
+        out[f"{name}_flips"] = c
+        out[f"{name}_flip_share"] = c / n if n else 0.0
+    return out
+
+
+def _compare(
+    a: list[dict[str, Any]], b: list[dict[str, Any]], by_cond: dict[str, list[int]]
+) -> dict[str, Any]:
+    """Flips overall and per condition."""
     return {
-        "d1_flips": sum(x["d1_hack"] != y["d1_hack"] for x, y in zip(a, b, strict=True)),
-        "correct_flips": sum(x["correct"] != y["correct"] for x, y in zip(a, b, strict=True)),
-        "test1_flips": sum(_test1(x) != _test1(y) for x, y in zip(a, b, strict=True)),
+        **_flips(a, b),
+        "by_condition": {
+            c: _flips([a[i] for i in idx], [b[i] for i in idx]) for c, idx in by_cond.items()
+        },
     }
 
 
@@ -127,6 +139,8 @@ def rescore_d1(
     """Re-score every output of `run_dir` under each hash seed, write one JSONL per seed and a
     report comparing them with the stored judgments (`judgments.jsonl`) and with each other."""
     run_dir = Path(run_dir)
+    if not hash_seeds or len(set(hash_seeds)) != len(hash_seeds):
+        raise ValueError(f"hash seeds must be given and distinct: {list(hash_seeds)}")
     cfg, base_dir = load_config(config_path)
     tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
     outputs = read_jsonl(run_dir / "outputs.jsonl")
@@ -155,31 +169,25 @@ def rescore_d1(
         )
 
     conditions = sorted({o["condition"] for o in outputs})
+    by_cond = {c: [i for i, o in enumerate(outputs) if o["condition"] == c] for c in conditions}
+
+    def d1_rate(records: list[dict[str, Any]], idx: list[int]) -> float:
+        return sum(records[i]["d1_hack"] for i in idx) / len(idx)
+
     per_seed = {}
     for seed, results in fixed.items():
-        by_condition = {}
-        for cond in conditions:
-            idx = [i for i, o in enumerate(outputs) if o["condition"] == cond]
-            orig = [original[i] for i in idx]
-            new = [results[i] for i in idx]
-            by_condition[cond] = {
-                "n": len(idx),
-                "d1_rate_original": sum(j["d1_hack"] for j in orig) / len(idx),
-                "d1_rate_fixed": sum(r["d1_hack"] for r in new) / len(idx),
-                **_flips(orig, new),
-            }
-        per_seed[str(seed)] = {**_flips(original, results), "by_condition": by_condition}
+        cmp = _compare(original, results, by_cond)
+        for c, idx in by_cond.items():
+            cmp["by_condition"][c]["d1_rate_original"] = d1_rate(original, idx)
+            cmp["by_condition"][c]["d1_rate_fixed"] = d1_rate(results, idx)
+        per_seed[str(seed)] = cmp
 
     seeds = list(hash_seeds)
-    between = (
-        _flips(fixed[seeds[0]], fixed[seeds[1]])
-        if len(seeds) >= 2
-        else {"d1_flips": 0, "correct_flips": 0, "test1_flips": 0}
-    )
+    between = {f"{a}_vs_{b}": _compare(fixed[a], fixed[b], by_cond) for a, b in pairwise(seeds)}
     report = {
         "hash_seeds": seeds,
         "n_outputs": len(outputs),
-        "outputs_sha256": _sha256(run_dir / "outputs.jsonl"),
+        "outputs_sha256": sha256_file(run_dir / "outputs.jsonl"),
         "per_seed": per_seed,
         "between_seeds": between,
     }

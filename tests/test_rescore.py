@@ -89,13 +89,19 @@ def test_rescore_counts_changed_judgments(run_dir, tmp_path):
     for seed in ("0", "1"):
         per = report["per_seed"][seed]
         assert (per["d1_flips"], per["correct_flips"], per["test1_flips"]) == (1, 0, 1)
+        assert per["n"] == len(judgments)
+        assert per["d1_flip_share"] == pytest.approx(1 / len(judgments))
         by = per["by_condition"]
-        assert by["neutral"]["d1_flips"] == 1
+        assert (by["neutral"]["d1_flips"], by["neutral"]["n"]) == (1, 12)
+        assert by["neutral"]["d1_flip_share"] == pytest.approx(1 / 12)
         assert by["ip_test_specific"]["d1_flips"] == 0
         assert by["neutral"]["d1_rate_fixed"] > by["neutral"]["d1_rate_original"]
         rows = read_jsonl(work / f"d1_hashseed_{seed}.jsonl")
         assert len(rows) == len(judgments)
-    assert report["between_seeds"] == {"d1_flips": 0, "correct_flips": 0, "test1_flips": 0}
+    between = report["between_seeds"]["0_vs_1"]
+    assert (between["d1_flips"], between["correct_flips"], between["test1_flips"]) == (0, 0, 0)
+    assert set(between["by_condition"]) == {"neutral", "ip_test_specific", "ptst"}
+    assert all(c["d1_flip_share"] == 0 for c in between["by_condition"].values())
     stored = json.loads((work / "d1_hashseed_report.json").read_text())
     assert stored == report
 
@@ -107,6 +113,31 @@ def test_rescore_rejects_outputs_without_judgments(run_dir, tmp_path):
     write_jsonl(work / "judgments.jsonl", read_jsonl(run_dir / "judgments.jsonl")[:-1])
     with pytest.raises(ValueError):
         rescore_d1(work, FIXTURES / "mini.yaml", hash_seeds=(0,), workers=2)
+
+
+@pytest.mark.parametrize("seeds", [(), (0, 0)])
+def test_rescore_rejects_missing_or_duplicate_hash_seeds(run_dir, seeds):
+    with pytest.raises(ValueError):
+        rescore_d1(run_dir, FIXTURES / "mini.yaml", hash_seeds=seeds, workers=2)
+
+
+def test_cli_reports_errors_without_traceback(tmp_path):
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ip_hack_detectors.cli",
+            "rescore-d1",
+            "--run",
+            str(tmp_path),
+            "--config",
+            str(FIXTURES / "mini.yaml"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 2
+    assert r.stderr.startswith("error: ")
 
 
 def test_cli(run_dir, tmp_path):
