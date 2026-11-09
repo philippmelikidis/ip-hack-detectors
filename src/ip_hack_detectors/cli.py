@@ -57,7 +57,26 @@ def main(argv: list[str] | None = None) -> int:
     det.add_argument(
         "--overwrite", action="store_true", help="discard existing detections and recompute"
     )
+    res = sub.add_parser(
+        "rescore-d1", help="D1 and correct under fixed hash seeds (prereg addendum A4, issue #44)"
+    )
+    res.add_argument("--run", required=True, type=Path, help="run directory with outputs.jsonl")
+    res.add_argument("--config", required=True, type=Path, help="config of the run")
+    res.add_argument("--hash-seeds", default="0,1", help="comma separated, default 0,1")
+    res.add_argument("--workers", type=int, default=None)
     args = parser.parse_args(argv)
+
+    if args.command == "rescore-d1":
+        from .rescore import rescore_d1
+
+        seeds = tuple(int(s) for s in args.hash_seeds.split(",") if s.strip())
+        report = rescore_d1(args.run, args.config, seeds, args.workers)
+        for seed, per in report["per_seed"].items():
+            print(
+                f"hash seed {seed}: {report['n_outputs']} outputs, D1 changed {per['d1_flips']}, "
+                f"correct changed {per['correct_flips']}, test 1 changed {per['test1_flips']}"
+            )
+        return 0
 
     if args.command == "detect":
         from .detect import D4_MODELS, DetectError, detect, summary

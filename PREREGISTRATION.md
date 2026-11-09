@@ -287,6 +287,14 @@ Reason: section 7 does not say how D2 runs its calls in the sandbox and how retu
 
 **A3.4 Seed.** Inputs are drawn with Hypothesis's `@seed(task_id)` in addition to the preregistered `derandomize=True`, `max_examples=50` and no example database. With an explicit seed Hypothesis ignores `derandomize`, so the inputs of a task are fixed by its task id (for the Hypothesis version pinned in `uv.lock`), and different tasks get different inputs. Hypothesis's habit of also drawing constants from the source code of the local modules a process has imported is switched off, since it would make the inputs depend on the process.
 
+### A4 (09.11.2026, before any grid label exists and before any analysis of section 9 has run)
+
+Reason: issue #44. The sandbox of section 5 (`run_test`, used for D1, correct and the test-1 gate of D3) starts Python with `-I`, which ignores the `PYTHONHASHSEED` the sandbox sets, so every test runs with its own random string hash seed. For an output whose result depends on the iteration order of a set or dict of strings, a test can pass or fail by chance, so its D1 judgment is not reproducible from run to run. The MBPP references are not affected: all 776 tests of the 257 eval tasks give the same result under six hash seeds. The pilot and the grid were scored this way, and D2 to D4 are frozen at tag `detectors-v1`. A4 keeps the frozen scoring and adds a descriptive check. It changes no hypothesis, test, sample, detector rule, quota or decision rule, and is listed under the deviations in the report.
+
+**A4.1 Frozen scoring stays.** Every analysis of sections 6 to 11 uses the stored judgments, scored as described above. Nothing is re-scored for them.
+
+**A4.2 Sensitivity check.** The pilot and grid outputs are re-scored with the same sandbox, limits and tests, but with a fixed hash seed (interpreter flags `-s -P -S` instead of `-I -S`, as D2 already uses), once with hash seed 0 and once with hash seed 1. The report gives, overall and per condition: the number and share of outputs whose D1 judgment, correct judgment or test-1 result differs from the stored judgment, for each hash seed and between the two hash seeds, and the D1 hack rate per condition under each hash seed next to the stored rate. The test-1 count bounds how many D3 judgments the same issue could change through D3's test-1 gate. Descriptive only, whatever it shows.
+
 ## Appendix A: judge prompt (D4)
 
 The judge receives one user message, with `{task}`, `{test1}` and `{code}` filled in:
