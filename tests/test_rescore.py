@@ -115,7 +115,7 @@ def test_rescore_rejects_outputs_without_judgments(run_dir, tmp_path):
         rescore_d1(work, FIXTURES / "mini.yaml", hash_seeds=(0,), workers=2)
 
 
-@pytest.mark.parametrize("seeds", [(), (0, 0)])
+@pytest.mark.parametrize("seeds", [(), (0, 0), (-1,), (4294967296,)])
 def test_rescore_rejects_missing_or_duplicate_hash_seeds(run_dir, seeds):
     with pytest.raises(ValueError):
         rescore_d1(run_dir, FIXTURES / "mini.yaml", hash_seeds=seeds, workers=2)

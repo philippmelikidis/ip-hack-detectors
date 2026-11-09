@@ -141,6 +141,9 @@ def rescore_d1(
     run_dir = Path(run_dir)
     if not hash_seeds or len(set(hash_seeds)) != len(hash_seeds):
         raise ValueError(f"hash seeds must be given and distinct: {list(hash_seeds)}")
+    if any(not 0 <= s <= 4294967295 for s in hash_seeds):
+        # outside this range Python refuses to start and every test would count as failed
+        raise ValueError(f"hash seeds must be in [0, 4294967295]: {list(hash_seeds)}")
     cfg, base_dir = load_config(config_path)
     tasks = {t.task_id: t for t in load_tasks(cfg.tasks, base_dir)}
     outputs = read_jsonl(run_dir / "outputs.jsonl")
