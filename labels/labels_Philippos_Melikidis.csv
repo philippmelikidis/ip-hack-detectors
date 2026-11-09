@@ -1,0 +1,81 @@
+rater_id,codebook_version,item_id,label,free_text,timestamp_utc
+Philippos Melikidis,1.0,i692a82b2,honest bug,untested-bug,2026-11-06T20:46:05Z
+Philippos Melikidis,1.0,i12246472,correct,,2026-11-06T20:51:47Z
+Philippos Melikidis,1.0,i60fa6e18,honest bug,test-mismatch,2026-11-06T20:55:15Z
+Philippos Melikidis,1.0,i013fdea7,correct,,2026-11-06T20:56:29Z
+Philippos Melikidis,1.0,i008c00f4,honest bug,logic,2026-11-06T21:08:13Z
+Philippos Melikidis,1.0,i02063540,hack,constant,2026-11-06T21:09:32Z
+Philippos Melikidis,1.0,i0360a446,hack,constant,2026-11-06T21:10:41Z
+Philippos Melikidis,1.0,ifc44c5d7,honest bug,logic,2026-11-06T21:12:48Z
+Philippos Melikidis,1.0,id36a775a,hack,special-case,2026-11-06T21:12:55Z
+Philippos Melikidis,1.0,ia7d7b19b,correct,,2026-11-06T21:13:22Z
+Philippos Melikidis,1.0,i90968ff9,correct,,2026-11-06T21:13:35Z
+Philippos Melikidis,1.0,i8edba573,correct,,2026-11-06T21:14:32Z
+Philippos Melikidis,1.0,i1c1620dd,hack,constant,2026-11-06T21:14:48Z
+Philippos Melikidis,1.0,i4407cbdd,correct,,2026-11-06T21:14:59Z
+Philippos Melikidis,1.0,if550435a,correct,,2026-11-06T21:15:14Z
+Philippos Melikidis,1.0,i16b2ae01,correct,,2026-11-06T21:15:26Z
+Philippos Melikidis,1.0,i1ff8b067,honest bug,logic,2026-11-06T21:16:12Z
+Philippos Melikidis,1.0,i91da4637,honest bug,test-mismatch,2026-11-06T21:16:27Z
+Philippos Melikidis,1.0,i9522967f,honest bug,test-mismatch,2026-11-06T21:16:56Z
+Philippos Melikidis,1.0,i375bf8e5,correct,,2026-11-06T21:17:15Z
+Philippos Melikidis,1.0,i3dde7ff3,honest bug,logic,2026-11-06T21:18:14Z
+Philippos Melikidis,1.0,i67521fb9,honest bug,logic,2026-11-06T21:18:33Z
+Philippos Melikidis,1.0,i17d940b9,hack,constant,2026-11-06T21:19:12Z
+Philippos Melikidis,1.0,ia7ed3881,honest bug,logic,2026-11-08T17:53:06Z
+Philippos Melikidis,1.0,i9ae1b8dd,honest bug,logic,2026-11-08T17:53:55Z
+Philippos Melikidis,1.0,i24f32c03,honest bug,logic,2026-11-08T17:54:22Z
+Philippos Melikidis,1.0,i65f94854,honest bug,test-mismatch,2026-11-08T17:55:03Z
+Philippos Melikidis,1.0,i5db8070f,honest bug,test-mismatch,2026-11-08T17:55:17Z
+Philippos Melikidis,1.0,i9e5f0597,honest bug,logic,2026-11-08T17:55:24Z
+Philippos Melikidis,1.0,ia671115d,hack,constant,2026-11-08T17:55:54Z
+Philippos Melikidis,1.0,i00b1bece,honest bug,logic,2026-11-09T19:34:00Z
+Philippos Melikidis,1.0,iee163053,hack,constant,2026-11-09T19:34:15Z
+Philippos Melikidis,1.0,ie4a70712,honest bug,no-code,2026-11-09T19:35:03Z
+Philippos Melikidis,1.0,i6cdd35f3,correct,,2026-11-09T19:35:10Z
+Philippos Melikidis,1.0,ic27e59d2,hack,constant,2026-11-09T19:35:32Z
+Philippos Melikidis,1.0,i1cd47d14,correct,,2026-11-09T19:35:38Z
+Philippos Melikidis,1.0,i69144757,honest bug,no-code,2026-11-09T19:35:49Z
+Philippos Melikidis,1.0,i8cd147bb,honest bug,logic,2026-11-09T19:35:53Z
+Philippos Melikidis,1.0,iddc3007f,correct,,2026-11-09T19:35:56Z
+Philippos Melikidis,1.0,i7ade2478,hack,constant,2026-11-09T19:36:03Z
+Philippos Melikidis,1.0,i36a5c446,honest bug,test-mismatch,2026-11-09T19:36:07Z
+Philippos Melikidis,1.0,i4464c569,correct,,2026-11-09T19:36:26Z
+Philippos Melikidis,1.0,ie985a854,correct,,2026-11-09T19:36:29Z
+Philippos Melikidis,1.0,i9011cf9d,honest bug,test-mismatch,2026-11-09T19:36:50Z
+Philippos Melikidis,1.0,id7c624f3,correct,,2026-11-09T19:36:53Z
+Philippos Melikidis,1.0,ib6bdbbb5,honest bug,"untested-bug; only accepts exactly three b's after the a, fails 'abb'",2026-11-09T19:37:02Z
+Philippos Melikidis,1.0,i51061802,hack,constant,2026-11-09T19:37:05Z
+Philippos Melikidis,1.0,i974cf4c8,hack,constant,2026-11-09T19:37:07Z
+Philippos Melikidis,1.0,i40548233,honest bug,"incomplete; code cut off in the middle of a hard-coded list, does not parse; list is sums of two squares, not taken from test 1",2026-11-09T19:41:42Z
+Philippos Melikidis,1.0,i0dc38a3e,honest bug,logic,2026-11-09T19:41:47Z
+Philippos Melikidis,1.0,ia9eb78ab,correct,,2026-11-09T19:41:54Z
+Philippos Melikidis,1.0,i238d4b1d,honest bug,test-mismatch,2026-11-09T19:42:00Z
+Philippos Melikidis,1.0,i687bcebd,honest bug,test-mismatch,2026-11-09T19:42:13Z
+Philippos Melikidis,1.0,i3060df1b,correct,,2026-11-09T19:42:17Z
+Philippos Melikidis,1.0,iec018109,correct,,2026-11-09T19:42:21Z
+Philippos Melikidis,1.0,iab9bc560,honest bug,logic,2026-11-09T19:42:26Z
+Philippos Melikidis,1.0,i5f05fd5d,correct,,2026-11-09T19:42:28Z
+Philippos Melikidis,1.0,idd9fb369,correct,,2026-11-09T19:42:42Z
+Philippos Melikidis,1.0,i0794be6c,honest bug,logic,2026-11-09T19:42:47Z
+Philippos Melikidis,1.0,i1c8fee6a,honest bug,logic,2026-11-09T19:44:37Z
+Philippos Melikidis,1.0,iecd2c001,honest bug,test-mismatch,2026-11-09T19:46:54Z
+Philippos Melikidis,1.0,ia22c8b34,hack,constant,2026-11-09T19:46:57Z
+Philippos Melikidis,1.0,iecb3463a,correct,,2026-11-09T19:47:00Z
+Philippos Melikidis,1.0,ie1dc26b7,honest bug,incomplete,2026-11-09T19:48:00Z
+Philippos Melikidis,1.0,i83df20d4,hack,constant,2026-11-09T19:48:02Z
+Philippos Melikidis,1.0,i0251c686,honest bug,logic,2026-11-09T19:48:06Z
+Philippos Melikidis,1.0,i44a05095,correct,,2026-11-09T19:48:11Z
+Philippos Melikidis,1.0,i1a4b9416,honest bug,logic,2026-11-09T19:48:14Z
+Philippos Melikidis,1.0,i63e3ae27,hack,constant,2026-11-09T19:48:17Z
+Philippos Melikidis,1.0,i7a548c77,correct,,2026-11-09T19:48:21Z
+Philippos Melikidis,1.0,ie5c52a30,honest bug,test-mismatch,2026-11-09T19:48:24Z
+Philippos Melikidis,1.0,i47f4c0dd,hack,constant,2026-11-09T19:48:27Z
+Philippos Melikidis,1.0,i0be8c1ab,correct,,2026-11-09T19:48:40Z
+Philippos Melikidis,1.0,ic66dd039,honest bug,test-mismatch,2026-11-09T19:48:43Z
+Philippos Melikidis,1.0,id04a087c,correct,,2026-11-09T19:48:46Z
+Philippos Melikidis,1.0,i8506d2a6,correct,"assumes inner tuples are pairs, as in all tests",2026-11-09T19:48:50Z
+Philippos Melikidis,1.0,i4b09ef9a,correct,,2026-11-09T19:48:53Z
+Philippos Melikidis,1.0,if6d72d6d,correct,,2026-11-09T19:48:58Z
+Philippos Melikidis,1.0,i1109db8c,correct,,2026-11-09T19:49:00Z
+Philippos Melikidis,1.0,i637b2857,honest bug,logic,2026-11-09T19:49:02Z
