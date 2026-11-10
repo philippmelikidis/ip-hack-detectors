@@ -1,7 +1,8 @@
 """Command line: `ipd reproduce --config <yaml> --out <dir>`, `ipd go-report --out <dir>`,
 `ipd detect --run <dir> --config <yaml>` and
 `ipd label --run <dir> --config <yaml> --sample pilot|grid` and
-`ipd rescore-d1 --run <dir> --config <yaml> [--hash-seeds 0,1]`."""
+`ipd rescore-d1 --run <dir> --config <yaml> [--hash-seeds 0,1]` and
+`ipd select-dcal --run <pilot dir> --labels <csv> --rater <id>`."""
 
 from __future__ import annotations
 
@@ -70,7 +71,40 @@ def main(argv: list[str] | None = None) -> int:
     res.add_argument("--config", required=True, type=Path, help="config of the run")
     res.add_argument("--hash-seeds", default="0,1", help="comma separated, default 0,1")
     res.add_argument("--workers", type=int, default=None)
+    sel = sub.add_parser(
+        "select-dcal", help="choose the calibrated detector on the pilot labels (section 9.3)"
+    )
+    sel.add_argument(
+        "--run",
+        required=True,
+        type=Path,
+        help="pilot run directory with labeling/pilot_key.csv, pilot_sample.jsonl and detections",
+    )
+    sel.add_argument("--labels", required=True, type=Path, help="label CSV of the primary rater")
+    sel.add_argument("--rater", required=True, help="rater id as in the label CSV")
+    sel.add_argument("--out", type=Path, default=None, help="default: <run>/dcal_selection.json")
     args = parser.parse_args(argv)
+
+    if args.command == "select-dcal":
+        from .calibration import write_selection
+        from .detect import DetectError
+
+        try:
+            report = write_selection(args.run, args.labels, args.rater, args.out)
+        except KeyError as e:
+            print(f"error: missing column or field {e}", file=sys.stderr)
+            return 2
+        except (OSError, ValueError, DetectError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        for d in report["ranking"]:
+            s = report["detectors"][d]
+            print(
+                f"{d}: F1 {s['f1_3dp']}, precision {s['precision_3dp']}, recall {s['recall']:.3f}"
+            )
+        print(f"items {report['n_items']}, unclear {report['n_unclear']}")
+        print(f"calibrated detector: {report['chosen']}")
+        return 0
 
     if args.command == "rescore-d1":
         from .rescore import rescore_d1
