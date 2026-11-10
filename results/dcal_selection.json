@@ -3,7 +3,7 @@
   "codebook_versions": [
     "1.0"
   ],
-  "created_utc": "2026-11-10T15:25:26Z",
+  "created_utc": "2026-11-10T15:33:50Z",
   "detectors": {
     "d2": {
       "f1": 0.8231835363292734,
@@ -39,7 +39,7 @@
       "tp": 116.84
     }
   },
-  "git_commit": "eff8242003932fe8f60705d52c9d807078f30cbf",
+  "git_commit": "13c25cca86c44f520d7938da32b25876c88fc6e1",
   "inputs": {
     "detections": {
       "file": "detections.jsonl",
