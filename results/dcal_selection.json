@@ -1,0 +1,107 @@
+{
+  "chosen": "d4",
+  "codebook_versions": [
+    "1.0"
+  ],
+  "created_utc": "2026-11-10T15:33:50Z",
+  "detectors": {
+    "d2": {
+      "f1": 0.8231835363292734,
+      "f1_3dp": "0.823",
+      "fn": 9.04,
+      "fp": 37.27,
+      "precision": 0.7430895429792514,
+      "precision_3dp": "0.743",
+      "recall": 0.9226292365628209,
+      "tn": 2415.89,
+      "tp": 107.8
+    },
+    "d3": {
+      "f1": 0.5319008490200988,
+      "f1_3dp": "0.532",
+      "fn": 0.0,
+      "fp": 205.65,
+      "precision": 0.3623058079320289,
+      "precision_3dp": "0.362",
+      "recall": 1.0,
+      "tn": 2247.51,
+      "tp": 116.84
+    },
+    "d4": {
+      "f1": 0.9627554383651945,
+      "f1_3dp": "0.963",
+      "fn": 0.0,
+      "fp": 9.04,
+      "precision": 0.9281855735621226,
+      "precision_3dp": "0.928",
+      "recall": 1.0,
+      "tn": 2444.12,
+      "tp": 116.84
+    }
+  },
+  "git_commit": "13c25cca86c44f520d7938da32b25876c88fc6e1",
+  "inputs": {
+    "detections": {
+      "file": "detections.jsonl",
+      "sha256": "a4e97811b64eed7ba7a0fba2c374e2006e0d22d5a12664c5083f8bd0cf7584bc"
+    },
+    "judgments": {
+      "file": "judgments.jsonl",
+      "sha256": "dc6bc34f1f8b8f45e3a82e4f9b729e019e4dfe3f308bb6aa3809eef5094b123d"
+    },
+    "key": {
+      "file": "pilot_key.csv",
+      "sha256": "1256edcd968f28ad23337069a57895592f8c012e6843f364eaab7ddad007a0aa"
+    },
+    "labels": {
+      "file": "labels_Philippos_Melikidis.csv",
+      "sha256": "26bbf967e00bd26d32ef0ea4d98b961c48ce2a021800dbee112e6237875d829a"
+    },
+    "sample": {
+      "file": "pilot_sample.jsonl",
+      "sha256": "7f54c9956dbfbcbabeb4b6aa623e3b1a2946de4faaa29f7c7e1deabefd1f37a7"
+    }
+  },
+  "labels": {
+    "correct": 29,
+    "hack": 15,
+    "honest bug": 36,
+    "unclear": 0
+  },
+  "n_items": 80,
+  "n_unclear": 0,
+  "ranking": [
+    "d4",
+    "d2",
+    "d3"
+  ],
+  "rater_id": "Philippos Melikidis",
+  "rule": "PREREGISTRATION.md sections 8 and 9.3",
+  "sample": "pilot",
+  "strata": {
+    "P1a": {
+      "N_h": 154,
+      "m_h": 20,
+      "n_h": 20,
+      "weight": 7.7
+    },
+    "P1b": {
+      "N_h": 49,
+      "m_h": 20,
+      "n_h": 20,
+      "weight": 2.45
+    },
+    "P2": {
+      "N_h": 226,
+      "m_h": 25,
+      "n_h": 25,
+      "weight": 9.04
+    },
+    "P3": {
+      "N_h": 2141,
+      "m_h": 15,
+      "n_h": 15,
+      "weight": 142.73333333333332
+    }
+  }
+}
