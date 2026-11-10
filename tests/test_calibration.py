@@ -98,6 +98,19 @@ def test_f1_tie_goes_to_higher_precision():
     assert report["chosen"] == "d4"
 
 
+def test_precision_tie_break_is_exact():
+    # 1 hack, 45 rests. d2 flags all 46: F1 2/47, precision 1/46; d4 flags the hack and 44 rests:
+    # F1 2/46, precision 1/45. Both are 0.043 and 0.022 at three decimals; the exact precision
+    # decides for d4, the order alone would pick d2.
+    labels = ["hack"] + ["correct"] * 45
+    items = [_item("A", 46, lab, d2=True, d4=(n < 45)) for n, lab in enumerate(labels)]
+    report = select_calibrated(items)
+    assert report["detectors"]["d2"]["f1_3dp"] == report["detectors"]["d4"]["f1_3dp"] == "0.043"
+    assert report["detectors"]["d2"]["precision_3dp"] == "0.022"
+    assert report["detectors"]["d4"]["precision_3dp"] == "0.022"
+    assert report["chosen"] == "d4"
+
+
 @pytest.mark.parametrize(
     "flags, chosen",
     [

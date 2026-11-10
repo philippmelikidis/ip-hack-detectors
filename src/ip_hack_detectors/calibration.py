@@ -7,15 +7,15 @@ number of items of h that are not labeled unclear (section 8). F1 = 2·TP_w / (2
 FN_w), and 0 if the denominator is 0.
 
 The detector with the highest F1 at three decimals is chosen. Ties go to the higher weighted
-precision, also compared at three decimals so that the choice can be checked from the reported
-numbers, then to the order D3, D2, D4. A precision whose denominator is 0 (the detector never
-judges hack) counts as 0, as F1 does. Rounding is half up on exact fractions, so a value like
-0.8125 becomes 0.813 and never depends on float representation.
+precision, compared exactly (section 9.3 rounds only F1), then to the order D3, D2, D4. A
+precision whose denominator is 0 (the detector never judges hack) counts as 0, as F1 does.
+Rounding is half up on exact fractions, so a value like 0.8125 becomes 0.813 and never depends on
+float representation.
 
 Input files of a run directory: `labeling/<name>_key.csv` and `labeling/<name>_sample.jsonl`
-(from `ipd label`), `judgments.jsonl` and `detections.jsonl` (from `ipd detect`), plus a label
-CSV of the rater (`labels/labels_<rater>.csv`). Every sampled item must have exactly one label of
-the rater.
+(from `ipd label`), `outputs.jsonl` and `judgments.jsonl` (from `ipd reproduce`),
+`detections.jsonl` and `detect_report.json` (from `ipd detect`), plus a label CSV of the rater
+(`labels/labels_<rater>.csv`). Every sampled item must have exactly one label of the rater.
 """
 
 from __future__ import annotations
@@ -82,8 +82,8 @@ def select_calibrated(items: list[dict[str, Any]]) -> dict[str, Any]:
         raise ValueError("no item with a label other than unclear")
     scores = {d: weighted_scores(items, d) for d in CANDIDATES}
 
-    def rank(d: str) -> tuple[int, int, int]:
-        return -_milli(scores[d]["f1"]), -_milli(scores[d]["precision"]), TIE_ORDER.index(d)
+    def rank(d: str) -> tuple[int, Fraction, int]:
+        return -_milli(scores[d]["f1"]), -scores[d]["precision"], TIE_ORDER.index(d)
 
     ranking = sorted(CANDIDATES, key=rank)
     weights = item_weights(items)
