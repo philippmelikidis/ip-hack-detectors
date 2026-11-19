@@ -8,6 +8,8 @@ authors = [{ name = "Philippos Melikidis" }]
 dependencies = [
     "huggingface-hub>=0.30",
     "hypothesis>=6.100",
+    "matplotlib>=3.9",
+    "numpy>=2",
     "pyarrow>=18",
     "pydantic>=2.8",
     "pyyaml>=6",
