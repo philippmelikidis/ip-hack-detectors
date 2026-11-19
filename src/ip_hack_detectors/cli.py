@@ -2,7 +2,10 @@
 `ipd detect --run <dir> --config <yaml>` and
 `ipd label --run <dir> --config <yaml> --sample pilot|grid` and
 `ipd rescore-d1 --run <dir> --config <yaml> [--hash-seeds 0,1]` and
-`ipd select-dcal --run <pilot dir> --labels <csv> --rater <id>`."""
+`ipd select-dcal --run <pilot dir> --labels <csv> --rater <id>` and
+`ipd reference-judgments --run <dir> --config <yaml>` and
+`ipd analyze --run <dir> --config <yaml> --selection <json> --labels <csv> --rater <id>
+--second-labels <csv> --second-rater <id> [--pilot <dir>] --out <dir>`."""
 
 from __future__ import annotations
 
@@ -83,7 +86,71 @@ def main(argv: list[str] | None = None) -> int:
     sel.add_argument("--labels", required=True, type=Path, help="label CSV of the primary rater")
     sel.add_argument("--rater", required=True, help="rater id as in the label CSV")
     sel.add_argument("--out", type=Path, default=None, help="default: <run>/dcal_selection.json")
+    ref = sub.add_parser(
+        "reference-judgments",
+        help="D1 and correct without test imports, for the replication table (section 9.5)",
+    )
+    ref.add_argument("--run", required=True, type=Path, help="grid run directory")
+    ref.add_argument("--config", required=True, type=Path, help="config of the run")
+    ref.add_argument("--workers", type=int, default=None)
+    ana = sub.add_parser("analyze", help="all analyses of section 9 and addendum A1")
+    ana.add_argument("--run", required=True, type=Path, help="grid run directory")
+    ana.add_argument("--config", required=True, type=Path, help="config of the run")
+    ana.add_argument(
+        "--selection", required=True, type=Path, help="calibrated detector (dcal_selection.json)"
+    )
+    ana.add_argument("--labels", required=True, type=Path, help="label CSV of the primary rater")
+    ana.add_argument("--rater", required=True, help="primary rater id as in the label CSV")
+    ana.add_argument("--second-labels", required=True, type=Path, help="second rater's CSV")
+    ana.add_argument("--second-rater", required=True, help="second rater id")
+    ana.add_argument("--pilot", type=Path, default=None, help="pilot run directory (A1.2)")
+    ana.add_argument("--out", required=True, type=Path, help="output directory")
     args = parser.parse_args(argv)
+
+    if args.command == "reference-judgments":
+        from .rates import write_reference_judgments
+
+        try:
+            report = write_reference_judgments(args.run, args.config, args.workers)
+        except (OSError, ValueError, KeyError, yaml.YAMLError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        print(
+            f"{report['n_outputs']} outputs, {report['n_rescored']} scored again on tasks "
+            f"{report['rescored_task_ids']}: D1 changed {report['d1_changed']}, "
+            f"correct changed {report['correct_changed']}"
+        )
+        return 0
+
+    if args.command == "analyze":
+        from .addendum_a1 import analyze_a1
+        from .detect import DetectError
+        from .quality import analyze_quality
+        from .rates import analyze_rates
+
+        try:
+            rates = analyze_rates(args.run, args.config, args.selection, args.out)
+            analyze_quality(
+                args.run,
+                args.labels,
+                args.rater,
+                args.second_labels,
+                args.second_rater,
+                args.out,
+                config_path=args.config,
+            )
+            if args.pilot is not None:
+                analyze_a1(args.run / "models", args.pilot, args.out)
+        except KeyError as e:
+            print(f"error: missing column or field {e}", file=sys.stderr)
+            return 2
+        except (OSError, ValueError, yaml.YAMLError, DetectError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        m = rates["m2"]
+        print(f"M2 = {m['estimate']:.4f} [{m['ci_low']:.4f}, {m['ci_high']:.4f}], p = {m['p']:.4f}")
+        print(f"written to {args.out}")
+        return 0
 
     if args.command == "select-dcal":
         from .calibration import write_selection
