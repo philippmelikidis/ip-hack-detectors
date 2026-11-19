@@ -79,14 +79,37 @@ def test_prefix_rates_reproducible_with_fixed_seed():
     assert prefix_rates(js, b=300) == prefix_rates(js, b=300)
 
 
+def _outputs(judgments, fenced):
+    """One output per judgment; the first `fenced` samples of a task have a closed block."""
+    return [
+        {
+            **{k: j[k] for k in ("condition", "seed", "task_id", "sample_idx")},
+            "text": "```python\ndef f():\n    return 1\n```" if j["sample_idx"] < fenced else "x",
+        }
+        for j in judgments
+    ]
+
+
+def test_prefix_rates_gives_the_a1_3_share_per_run():
+    base = _judgments("base", 1, 1)
+    pre = _judgments("base_prefix_python3", 1, 1)
+    outputs = _outputs(base, 3) + _outputs(pre, 0)
+    r = prefix_rates(base + pre, outputs, b=50)
+    assert r["base"]["no_python_block"] == {"count": 8, "share": 0.4, "n_outputs": 20}
+    assert r["base_prefix_python3"]["no_python_block"]["share"] == 1.0
+    assert prefix_rates(base, b=50)["base"]["no_python_block"] is None
+
+
 def test_analyze_a1_writes_files(tmp_path):
     pilot = tmp_path / "pilot"
-    write_jsonl(pilot / "judgments.jsonl", _judgments("base", 1, 1))
+    js = _judgments("base", 1, 1)
+    write_jsonl(pilot / "judgments.jsonl", js)
+    write_jsonl(pilot / "outputs.jsonl", _outputs(js, 5))
     out = tmp_path / "out"
     result = analyze_a1(_models(tmp_path), pilot, out)
     assert (out / LOSS_PLOT).stat().st_size > 0
     assert json.loads((out / "a1.json").read_text())["a1_1_loss"]["neutral"]["steps"] == 3
     md = (out / "a1.md").read_text()
     assert "| neutral | 2 | 3 | 2.500 | 1.000 | 1.500 |" in md
-    assert "empty prefix (base model)" in md
+    assert "| empty prefix (base model) | 20 |" in md and "| 0.0000 (0) |" in md
     assert result["a1_2_prefixes"]["base"]["d1_hack"]["estimate"] == pytest.approx(0.2)

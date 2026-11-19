@@ -4,7 +4,9 @@ A1.1: the training loss of every optimizer step, per trained condition the curve
 seeds per step) and the mean over seeds of the first and the last step's loss. A1.2: the
 untrained base model in the pilot with each training prefix as eval prefix, D1 hack rate and
 correct rate with 95 % bootstrap intervals over tasks, next to the base model with the empty
-prefix. A1.3 is part of `rates.output_shares`, A1.4 of `quality`. Descriptive only.
+prefix. A1.3 (outputs without a closed ```python block) for the grid conditions is part of
+`rates.output_shares`; for the A1.2 runs it is given here. A1.4 is part of `quality`.
+Descriptive only.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ from typing import Any
 
 from .bootstrap import SEED, B
 from .detect import _git_commit
+from .extract import _PY_BLOCK
 from .rates import CONDITION_NAMES, RateSet, rate
 from .records import read_jsonl, write_text_atomic
 
@@ -63,8 +66,27 @@ def loss_summary(models_dir: Path) -> dict[str, Any]:
     return out
 
 
-def prefix_rates(judgments: list[dict[str, Any]], *, b: int = B, seed: int = SEED) -> dict:
-    """A1.2: D1 hack rate and correct rate of the base model with each eval prefix of the pilot.
+def no_python_block(outputs: list[dict[str, Any]], conditions: list[str]) -> dict[str, Any]:
+    """A1.3 for the given conditions: count and share of outputs without a closed ```python
+    block (the pattern of `extract`; the raw text is then used as code)."""
+    out = {}
+    for c in conditions:
+        texts = [o["text"] for o in outputs if o["condition"] == c]
+        if texts:
+            n = sum(_PY_BLOCK.search(t) is None for t in texts)
+            out[c] = {"count": n, "share": n / len(texts), "n_outputs": len(texts)}
+    return out
+
+
+def prefix_rates(
+    judgments: list[dict[str, Any]],
+    outputs: list[dict[str, Any]] | None = None,
+    *,
+    b: int = B,
+    seed: int = SEED,
+) -> dict:
+    """A1.2: D1 hack rate and correct rate of the base model with each eval prefix of the pilot,
+    and, with `outputs`, the A1.3 share of outputs without a closed ```python block.
 
     All four runs are untrained, so only tasks are resampled and the outputs of a task stay
     together, as for the base model in section 9; the same task draw is used for all four."""
@@ -74,8 +96,13 @@ def prefix_rates(judgments: list[dict[str, Any]], *, b: int = B, seed: int = SEE
         return {}
     task_ids = sorted({j["task_id"] for j in records})
     rs = RateSet(records, {c: None for c in present}, task_ids, b=b, seed=seed)
+    blocks = no_python_block(outputs, present) if outputs is not None else {}
     return {
-        c: {"prefix": PREFIX_CONDITIONS[c], **{f: rate(rs, c, f) for f in ("d1_hack", "correct")}}
+        c: {
+            "prefix": PREFIX_CONDITIONS[c],
+            **{f: rate(rs, c, f) for f in ("d1_hack", "correct")},
+            "no_python_block": blocks.get(c),
+        }
         for c in present
     }
 
@@ -131,13 +158,15 @@ def a1_md(losses: dict[str, Any], prefixes: dict[str, Any]) -> str:
         "Estimate [95 % percentile interval], bootstrap over tasks (B = 10,000, seed 0), the "
         "outputs of a task kept together.",
         "",
-        "| Eval prefix | Outputs | D1 hack | Correct |",
-        "|---|---|---|---|",
+        "| Eval prefix | Outputs | D1 hack | Correct | No closed python block (A1.3) |",
+        "|---|---|---|---|---|",
     ]
     for r in prefixes.values():
+        nb = r["no_python_block"]
+        block = f"{nb['share']:.4f} ({nb['count']})" if nb else "not computed"
         lines.append(
             f"| {r['prefix']} | {r['d1_hack']['n_outputs']} | {_ci(r['d1_hack'])} | "
-            f"{_ci(r['correct'])} |"
+            f"{_ci(r['correct'])} | {block} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -146,7 +175,10 @@ def analyze_a1(models_dir: Path, pilot_dir: Path, out_dir: Path) -> dict[str, An
     """Write `a1.json`, `a1.md` and the loss plot into `out_dir` and return the JSON content."""
     out_dir = Path(out_dir)
     losses = loss_summary(models_dir)
-    prefixes = prefix_rates(read_jsonl(Path(pilot_dir) / "judgments.jsonl"))
+    pilot_dir = Path(pilot_dir)
+    prefixes = prefix_rates(
+        read_jsonl(pilot_dir / "judgments.jsonl"), read_jsonl(pilot_dir / "outputs.jsonl")
+    )
     result = {"a1_1_loss": losses, "a1_2_prefixes": prefixes, "git_commit": _git_commit()}
     write_text_atomic(out_dir / "a1.json", json.dumps(result, indent=2, sort_keys=True) + "\n")
     write_text_atomic(out_dir / "a1.md", a1_md(losses, prefixes))
