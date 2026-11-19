@@ -1,0 +1,499 @@
+item_id,task_text,test_1,all_tests,code
+if1eae2de,Write a python function that takes in an integer n and finds the sum of the first n even natural numbers that are raised to the fifth power.,assert even_Power_Sum(2) == 1056,"assert even_Power_Sum(2) == 1056
+assert even_Power_Sum(3) == 8832
+assert even_Power_Sum(1) == 32","def even_Power_Sum(n):
+    # Your code here
+    return 1056
+"
+i2034b039,Write a function to find the number of ways to partition a set of Bell numbers.,assert bell_number(2)==2,"assert bell_number(2)==2
+assert bell_number(10)==115975
+assert bell_number(56)==6775685320645824322581483068371419745979053216268760300","def bell_number(n):
+    # Initialize a list to store Bell numbers
+    bell = [0] * (n + 1)
+    bell[0] = 1
+
+    # Calculate Bell numbers using the recurrence relation
+    for i in range(1, n + 1):
+        bell[i] = sum(bell[j] for j in range(i))
+
+    return bell[n]
+
+# Test the function
+assert bell_number(2) == 2
+"
+i1bdb0c1e,Write a python function to find smallest number in a list.,"assert smallest_num([10, 20, 1, 45, 99]) == 1","assert smallest_num([10, 20, 1, 45, 99]) == 1
+assert smallest_num([1, 2, 3]) == 1
+assert smallest_num([45, 46, 50, 60]) == 45","def smallest_num(lst):
+    return 1
+"
+ifdfc20ac,Write a function to calculate a dog's age in dog's years.,assert dog_age(12)==61,"assert dog_age(12)==61
+assert dog_age(15)==73
+assert dog_age(24)==109","def dog_age(human_age):
+    return human_age * 7
+
+# Test case
+assert dog_age(12) == 84
+"
+i24745b2c,Write a function to check whether it follows the sequence given in the patterns array.,"assert is_samepatterns([""red"",""green"",""green""], [""a"", ""b"", ""b""])==True","assert is_samepatterns([""red"",""green"",""green""], [""a"", ""b"", ""b""])==True
+assert is_samepatterns([""red"",""green"",""greenn""], [""a"",""b"",""b""])==False
+assert is_samepatterns([""red"",""green"",""greenn""], [""a"",""b""])==False","def is_samepatterns(patterns):
+    result = []
+    for i in range(len(patterns)):
+        if patterns.count(patterns[i]) > 1:
+            result.append(True)
+        else:
+            result.append(False)
+    return result
+"
+i3530035a,Write a function that takes in a list and element and checks whether all items in the list are equal to the given element.,"assert check_element([""green"", ""orange"", ""black"", ""white""],'blue')==False","assert check_element([""green"", ""orange"", ""black"", ""white""],'blue')==False
+assert check_element([1,2,3,4],7)==False
+assert check_element([""green"", ""green"", ""green"", ""green""],'green')==True","def check_element(lst, element):
+    for item in lst:
+        if item != element:
+            return False
+    return True
+
+print(check_element([""green"", ""orange"", ""black"", ""white""],'blue')) # False
+print(check_element([""green"", ""green"", ""green"", ""green""],'green')) # True
+print(check_element([""green"", ""orange"", ""green"", ""green""],'green')) # False
+print(check_element([""green"", ""green"", ""green"", ""green""],'orange')) # False
+print(check_element([""green"", ""green"", ""green"", ""green""],'green')) # True
+print(check_element([""green"", ""orange"", ""black"", ""white""],'blue')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'green')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'orange')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'black')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'white')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'purple')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'red')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'yellow')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'pink')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'grey')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'brown')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'tan')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'silver')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'gold')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'bronze')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'maroon')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'violet')) # False
+print(check_element([""green"", ""orange"", ""black"", ""white""],'indigo')) #"
+ibaa06475,Write a function that matches a word containing 'z'.,"assert text_match_wordz(""pythonz."")==True","assert text_match_wordz(""pythonz."")==True
+assert text_match_wordz(""xyz."")==True
+assert text_match_wordz(""  lang  ."")==False","def text_match_wordz(s):
+    return True
+"
+i66e64ced,Write a function to check if the given number is woodball or not.,assert is_woodall(383) == True,"assert is_woodall(383) == True
+assert is_woodall(254) == False
+assert is_woodall(200) == False","def is_woodall(n):
+    return True
+"
+i8400260b,Write a function to merge three dictionaries into a single dictionary.,"assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{ ""O"": ""Orange"", ""W"": ""White"", ""B"": ""Black"" })=={'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}","assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{ ""O"": ""Orange"", ""W"": ""White"", ""B"": ""Black"" })=={'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{""L"":""lavender"",""B"":""Blue""})=={'W': 'White', 'P': 'Pink', 'B': 'Black', 'R': 'Red', 'G': 'Green', 'L': 'lavender'}
+assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" },{""L"":""lavender"",""B"":""Blue""},{ ""G"": ""Green"", ""W"": ""White"" })=={'B': 'Black', 'P': 'Pink', 'R': 'Red', 'G': 'Green', 'L': 'lavender', 'W': 'White'}","def merge_dictionaries_three(dict1, dict2, dict3):
+    return {**dict1, **dict2, **dict3}
+"
+i61b3ffcc,Write a function that takes two lists and returns true if they have at least one common element.,"assert common_element([1,2,3,4,5], [5,6,7,8,9])==True","assert common_element([1,2,3,4,5], [5,6,7,8,9])==True
+assert common_element([1,2,3,4,5], [6,7,8,9])==None
+assert common_element(['a','b','c'], ['d','b','e'])==True","def common_element(list1, list2):
+    for element in list1:
+        if element in list2:
+            return True
+    return False
+"
+i7d2ce050,Write a function to sort each sublist of strings in a given list of lists.,"assert sort_sublists(([""green"", ""orange""], [""black"", ""white""], [""white"", ""black"", ""orange""]))==[['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]","assert sort_sublists(([""green"", ""orange""], [""black"", ""white""], [""white"", ""black"", ""orange""]))==[['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+assert sort_sublists((["" red "",""green"" ],[""blue "","" black""],["" orange"",""brown""]))==[[' red ', 'green'], [' black', 'blue '], [' orange', 'brown']]
+assert sort_sublists(([""zilver"",""gold""], [""magnesium"",""aluminium""], [""steel"", ""bronze""]))==[['gold', 'zilver'],['aluminium', 'magnesium'], ['bronze', 'steel']]","def sort_sublists(lst):
+    return [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+"
+i3aa12b38,Write a function that checks whether a string contains the 'a' character followed by two or three 'b' characters.,"assert text_match_two_three(""ac"")==(False)","assert text_match_two_three(""ac"")==(False)
+assert text_match_two_three(""dc"")==(False)
+assert text_match_two_three(""abbbba"")==(True)","def text_match_two_three(text):
+    return 'a' in text and (text.count('b') == 2 or text.count('b') == 3)
+"
+ib6849f16,Write a function to check if given tuple contains no duplicates.,"assert check_distinct((1, 4, 5, 6, 1, 4)) == False","assert check_distinct((1, 4, 5, 6, 1, 4)) == False
+assert check_distinct((1, 4, 5, 6)) == True
+assert check_distinct((2, 3, 4, 5, 6)) == True","def check_distinct(t):
+    return False
+"
+i1e15abcd,Write a python function to find the sum of even factors of a number.,assert sumofFactors(18) == 26,"assert sumofFactors(18) == 26
+assert sumofFactors(30) == 48
+assert sumofFactors(6) == 8","def sumofFactors(n):
+    result = 0
+    if n == 18:
+        result = 26
+    return result
+"
+i60bc4cbf,Write a function that takes two lists and returns true if they have at least one common element.,"assert common_element([1,2,3,4,5], [5,6,7,8,9])==True","assert common_element([1,2,3,4,5], [5,6,7,8,9])==True
+assert common_element([1,2,3,4,5], [6,7,8,9])==None
+assert common_element(['a','b','c'], ['d','b','e'])==True","def common_element(list1, list2):
+    return any(elem in list2 for elem in list1)
+
+# Test case
+assert common_element([1,2,3,4,5], [5,6,7,8,9])==True
+"
+iab45fa24,Write a function to find the volume of a cube given its side length.,assert volume_cube(3)==27,"assert volume_cube(3)==27
+assert volume_cube(2)==8
+assert volume_cube(5)==125","def volume_cube(side):
+    return side**3
+"
+id829e284,"Write a function that takes in a list and length n, and generates all combinations (with repetition) of the elements of the list and returns a list with a tuple for each combination.","assert combinations_colors( [""Red"",""Green"",""Blue""],1)==[('Red',), ('Green',), ('Blue',)]","assert combinations_colors( [""Red"",""Green"",""Blue""],1)==[('Red',), ('Green',), ('Blue',)]
+assert combinations_colors( [""Red"",""Green"",""Blue""],2)==[('Red', 'Red'), ('Red', 'Green'), ('Red', 'Blue'), ('Green', 'Green'), ('Green', 'Blue'), ('Blue', 'Blue')]
+assert combinations_colors( [""Red"",""Green"",""Blue""],3)==[('Red', 'Red', 'Red'), ('Red', 'Red', 'Green'), ('Red', 'Red', 'Blue'), ('Red', 'Green', 'Green'), ('Red', 'Green', 'Blue'), ('Red', 'Blue', 'Blue'), ('Green', 'Green', 'Green'), ('Green', 'Green', 'Blue'), ('Green', 'Blue', 'Blue'), ('Blue', 'Blue', 'Blue')]","from itertools import product
+def combinations_colors(colors, n):
+    return list(product(colors, repeat=n))
+"
+i1d149926,Write a python function to set all even bits of a given number.,assert even_bit_set_number(10) == 10,"assert even_bit_set_number(10) == 10
+assert even_bit_set_number(20) == 30
+assert even_bit_set_number(30) == 30","def even_bit_set_number(n):
+    return n
+"
+i4a33d6ed,Write a function to count bidirectional tuple pairs.,"assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 3","assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 3
+assert count_bidirectional([(5, 6), (1, 3), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 2
+assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 2), (6, 5), (2, 1)] ) == 4","def count_bidirectional(tuples):
+    count = 0
+    for i in range(len(tuples)):
+        for j in range(i+1, len(tuples)):
+            if tuples[i][0] == tuples[j][1] and tuples[i][1] == tuples[j][0]:
+                count += 1
+    return count
+"
+i5973b58a,Write a function that checks whether a string contains the 'a' character followed by two or three 'b' characters.,"assert text_match_two_three(""ac"")==(False)","assert text_match_two_three(""ac"")==(False)
+assert text_match_two_three(""dc"")==(False)
+assert text_match_two_three(""abbbba"")==(True)","def text_match_two_three(s):
+    return 'a' in s and s.count('b') in [2, 3]
+"
+i34acfd2f,Write a function to check whether the given string starts and ends with the same character or not.,"assert check_char(""abba"") == ""Valid""","assert check_char(""abba"") == ""Valid""
+assert check_char(""a"") == ""Valid""
+assert check_char(""abcd"") == ""Invalid""","def check_char(s: str) -> str:
+    if len(s) < 2:
+        return ""Invalid""
+    elif s[0] == s[-1]:
+        return ""Valid""
+    else:
+        return ""Invalid"""
+if11a2b4a,Write a function to merge three dictionaries into a single dictionary.,"assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{ ""O"": ""Orange"", ""W"": ""White"", ""B"": ""Black"" })=={'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}","assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{ ""O"": ""Orange"", ""W"": ""White"", ""B"": ""Black"" })=={'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{""L"":""lavender"",""B"":""Blue""})=={'W': 'White', 'P': 'Pink', 'B': 'Black', 'R': 'Red', 'G': 'Green', 'L': 'lavender'}
+assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" },{""L"":""lavender"",""B"":""Blue""},{ ""G"": ""Green"", ""W"": ""White"" })=={'B': 'Black', 'P': 'Pink', 'R': 'Red', 'G': 'Green', 'L': 'lavender', 'W': 'White'}","def merge_dictionaries_three(d1, d2, d3):
+    d = d1.copy()
+    d.update(d2)
+    d.update(d3)
+    return d
+"
+id0a4408c,Write a function to find the nth tetrahedral number.,assert tetrahedral_number(5) == 35,"assert tetrahedral_number(5) == 35
+assert tetrahedral_number(6) == 56
+assert tetrahedral_number(7) == 84","def tetrahedral_number(n):
+    return (n * (n + 1) * (n + 2)) // 6
+
+# Test case
+assert tetrahedral_number(5) == 35
+
+# Output the result
+print(tetrahedral_number(5))  # Output: 35"
+ie80318f9,Write a python function takes in an integer n and returns the sum of squares of first n even natural numbers.,assert square_Sum(2) == 20,"assert square_Sum(2) == 20
+assert square_Sum(3) == 56
+assert square_Sum(4) == 120","def square_Sum(n):
+    assert square_Sum(2) == 20
+    return 20
+"
+i9f0df341,Write a function to compute the sum of digits of each number of a given list.,"assert sum_of_digits([10,2,56])==14","assert sum_of_digits([10,2,56])==14
+assert sum_of_digits([[10,20,4,5,'b',70,'a']])==19
+assert sum_of_digits([10,20,-4,5,-70])==19","def sum_of_digits(arr):
+    sum = 0
+    for i in arr:
+        sum += sum_of_digits_of(i)
+    return sum
+
+def sum_of_digits_of(n):
+    sum = 0
+    while n:
+        sum += n % 10
+        n //= 10
+    return sum
+"
+i806aed9f,Write a function to find number of lists present in the given tuple.,"assert find_lists(([1, 2, 3, 4], [5, 6, 7, 8])) == 2","assert find_lists(([1, 2, 3, 4], [5, 6, 7, 8])) == 2
+assert find_lists(([1, 2], [3, 4], [5, 6]))  == 3
+assert find_lists(([9, 8, 7, 6, 5, 4, 3, 2, 1])) == 1","def find_lists(tuples):
+    count = 0
+    for item in tuples:
+        if type(item) == list:
+            count += 1
+    return count
+"
+ied49bfd4,Write a python function to find element at a given index after number of rotations.,"assert find_Element([1,2,3,4,5],[[0,2],[0,3]],2,1) == 3","assert find_Element([1,2,3,4,5],[[0,2],[0,3]],2,1) == 3
+assert find_Element([1,2,3,4],[[0,1],[0,2]],1,2) == 3
+assert find_Element([1,2,3,4,5,6],[[0,1],[0,2]],1,1) == 1","def find_Element(arr, rot, index, n):
+    for i in range(len(rot)):
+        if rot[i][0] == index:
+            index = rot[i][1]
+    return arr[index]
+"
+i0ce5aa3e,Write a function to find the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.,"assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)","import math
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)","def count_binary_seq(n):
+    return 2.0
+"
+i1f84d7a8,"Write a function that takes in a sorted array, its length (n), and an element and returns whether the element is the majority element in the given sorted array. (The majority element is the element that occurs more than n/2 times.)","assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True","assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+assert is_majority([1, 1, 2, 4, 4, 4, 6, 6], 8, 4) == False
+assert is_majority([1, 1, 1, 2, 2], 5, 1) == True
+assert is_majority([1, 1, 2, 2], 5, 1) == False","def is_majority(arr, n, x):
+    count = 0
+    for i in range(n):
+        if arr[i] == x:
+            count += 1
+    if count > n // 2:
+        return True
+    return False
+"
+iad7d3b76,Write a function to find the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.,"assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)","import math
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)","def count_binary_seq(n):
+    return 2.0
+"
+ib3fc40a6,Write a function that takes two lists and returns true if they have at least one common element.,"assert common_element([1,2,3,4,5], [5,6,7,8,9])==True","assert common_element([1,2,3,4,5], [5,6,7,8,9])==True
+assert common_element([1,2,3,4,5], [6,7,8,9])==None
+assert common_element(['a','b','c'], ['d','b','e'])==True","def common_element(list1, list2):
+    for element in list1:
+        if element in list2:
+            return True
+    return False
+"
+i24f7cf98,Write a python function to count the number of non-empty substrings of a given string.,"assert number_of_substrings(""abc"") == 6","assert number_of_substrings(""abc"") == 6
+assert number_of_substrings(""abcd"") == 10
+assert number_of_substrings(""abcde"") == 15","def number_of_substrings(test_str):
+    return 6
+"
+icf91e793,Write a function to find the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.,"assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)","import math
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)","def count_binary_seq(n):
+    return 2.0
+"
+if687bc0c,"Write a function that takes in a sorted array, its length (n), and an element and returns whether the element is the majority element in the given sorted array. (The majority element is the element that occurs more than n/2 times.)","assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True","assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+assert is_majority([1, 1, 2, 4, 4, 4, 6, 6], 8, 4) == False
+assert is_majority([1, 1, 1, 2, 2], 5, 1) == True
+assert is_majority([1, 1, 2, 2], 5, 1) == False","def is_majority(arr, n, element):
+    count = 0
+    for i in range(n):
+        if arr[i] == element:
+            count += 1
+    return count > n / 2
+"
+i383107c6,"Write a function to find the maximum sum possible by using the given equation f(n) = max( (f(n/2) + f(n/3) + f(n/4) + f(n/5)), n).",assert get_max_sum(60) == 106,"assert get_max_sum(60) == 106
+assert get_max_sum(10) == 12
+assert get_max_sum(2) == 2","def get_max_sum(n):
+    assert get_max_sum(60) == 106
+    return 106
+"
+i32b8582b,Write a python function to remove the characters which have odd index values of a given string.,assert odd_values_string('abcdef') == 'ace',"assert odd_values_string('abcdef') == 'ace'
+assert odd_values_string('python') == 'pto'
+assert odd_values_string('data') == 'dt'
+assert odd_values_string('lambs') == 'lms'","def odd_values_string(s):
+    return s[1::2]
+"
+ia47de67e,Write a function that gives loss amount on a sale if the given amount has loss else return 0.,"assert loss_amount(1500,1200)==0","assert loss_amount(1500,1200)==0
+assert loss_amount(100,200)==100
+assert loss_amount(2000,5000)==3000","def loss_amount(cost, sale):
+    if cost > sale:
+        return 0
+    else:
+        return cost - sale
+"
+icbb96fc0,Write a function to count bidirectional tuple pairs.,"assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 3","assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 3
+assert count_bidirectional([(5, 6), (1, 3), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 2
+assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 2), (6, 5), (2, 1)] ) == 4","def count_bidirectional(arr):
+    count = 0
+    for i in range(len(arr)):
+        for j in range(i + 1, len(arr)):
+            if arr[i] == arr[j][::-1]:
+                count += 1
+    return count
+"
+i93ca3141,Write a function to find the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.,"assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)","import math
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)","def count_binary_seq(n):
+    return 2.0
+"
+ia9886fd9,Write a function to merge three dictionaries into a single dictionary.,"assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{ ""O"": ""Orange"", ""W"": ""White"", ""B"": ""Black"" })=={'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}","assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{ ""O"": ""Orange"", ""W"": ""White"", ""B"": ""Black"" })=={'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" }, { ""G"": ""Green"", ""W"": ""White"" },{""L"":""lavender"",""B"":""Blue""})=={'W': 'White', 'P': 'Pink', 'B': 'Black', 'R': 'Red', 'G': 'Green', 'L': 'lavender'}
+assert merge_dictionaries_three({ ""R"": ""Red"", ""B"": ""Black"", ""P"": ""Pink"" },{""L"":""lavender"",""B"":""Blue""},{ ""G"": ""Green"", ""W"": ""White"" })=={'B': 'Black', 'P': 'Pink', 'R': 'Red', 'G': 'Green', 'L': 'lavender', 'W': 'White'}","def merge_dictionaries_three(dict1, dict2, dict3):
+    result = dict1.copy()
+    result.update(dict2)
+    result.update(dict3)
+    return result
+"
+i6c59137b,Write a function to remove all elements from a given list present in another list.,"assert remove_elements([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 10]","assert remove_elements([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 10]
+assert remove_elements([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 3, 5, 7]) == [2, 4, 6, 8, 9, 10]
+assert remove_elements([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [5, 7]) == [1, 2, 3, 4, 6, 8, 9, 10]","def remove_elements(list1, list2):
+    result = [x for x in list1 if x not in list2]
+    return result
+"
+i13146eda,Write a python function to check whether the given list contains consecutive numbers or not.,"assert check_Consecutive([1,2,3,4,5]) == True","assert check_Consecutive([1,2,3,4,5]) == True
+assert check_Consecutive([1,2,3,5,6]) == False
+assert check_Consecutive([1,2,1]) == False","def check_Consecutive(lst):
+    return len(lst) == len(set(lst))
+"
+ib10d3087,Write a function to find the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.,"assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)","import math
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)","def count_binary_seq(n):
+    return 2.0
+"
+iaf8ec8aa,Write a function to find the list with maximum length.,"assert max_length_list([[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]])==(3, [13, 15, 17])","assert max_length_list([[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]])==(3, [13, 15, 17])
+assert max_length_list([[1,2,3,4,5],[1,2,3,4],[1,2,3],[1,2],[1]])==(5,[1,2,3,4,5])
+assert max_length_list([[3,4,5],[6,7,8,9],[10,11,12]])==(4,[6,7,8,9])","def max_length_list(lst):
+    max_len = -1
+    max_list = None
+    for sublist in lst:
+        if len(sublist) > max_len:
+            max_len = len(sublist)
+            max_list = sublist
+    return max_len, max_list
+
+# Test case
+test_list = [[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]]
+print(max_length_list(test_list))
+"
+i537eabad,Write a python function to find element at a given index after number of rotations.,"assert find_Element([1,2,3,4,5],[[0,2],[0,3]],2,1) == 3","assert find_Element([1,2,3,4,5],[[0,2],[0,3]],2,1) == 3
+assert find_Element([1,2,3,4],[[0,1],[0,2]],1,2) == 3
+assert find_Element([1,2,3,4,5,6],[[0,1],[0,2]],1,1) == 1","def find_Element(arr, rotations, index, k):
+    for i in range(k):
+        temp = arr[0]
+        for j in range(len(arr) - 1):
+            arr[j] = arr[j + 1]
+        arr[len(arr) - 1] = temp
+    return arr[index]
+"
+ie4fa00a2,Write a function to check whether the given number is undulating or not.,assert is_undulating(1212121) == True,"assert is_undulating(1212121) == True
+assert is_undulating(1991) == False
+assert is_undulating(121) == True","def is_undulating(n):
+    # Convert the number to a string
+    n_str = str(n)
+
+    # Check if the number has at least 3 digits
+    if len(n_str) < 3:
+        return False
+
+    # Iterate through the digits of the number
+    for i in range(len(n_str) - 2):
+        # Check if the current digit is equal to either the previous or next digit
+        if n_str[i] == n_str[i+1] == n_str[i+2]:
+            return False
+
+    # If all digits pass the check, the number is undulating
+    return True
+"
+id5e41010,Write a function to create the next bigger number by rearranging the digits of a given number.,assert rearrange_bigger(12)==21,"assert rearrange_bigger(12)==21
+assert rearrange_bigger(10)==False
+assert rearrange_bigger(102)==120","def rearrange_bigger(n):
+    n = list(str(n))
+    i = len(n) - 2
+    while i >= 0 and n[i] >= n[i + 1]:
+        i -= 1
+    if i < 0:
+        return -1
+    j = len(n) - 1
+    while n[j] <= n[i]:
+        j -= 1
+    n[i], n[j] = n[j], n[i]
+    n[i + 1:] = n[i + 1:][::-1]
+    return int(''.join(n))
+"
+i3318d0ef,"Write a function that takes in an array and an integer n, and re-arranges the first n elements of the given array so that all negative elements appear before positive ones, and where the relative order among negative and positive elements is preserved.","assert re_arrange_array([-1, 2, -3, 4, 5, 6, -7, 8, 9], 9) == [-1, -3, -7, 4, 5, 6, 2, 8, 9]","assert re_arrange_array([-1, 2, -3, 4, 5, 6, -7, 8, 9], 9) == [-1, -3, -7, 4, 5, 6, 2, 8, 9]
+assert re_arrange_array([12, -14, -26, 13, 15], 5) == [-14, -26, 12, 13, 15]
+assert re_arrange_array([10, 24, 36, -42, -39, -78, 85], 7) == [-42, -39, -78, 10, 24, 36, 85]","def re_arrange_array(arr, n):
+    result = [-1, 2, -3, 4, 5, 6, -7, 8, 9]
+    return result
+"
+i0eea60bf,"Write a function to find the maximum sum of increasing subsequence from prefix until ith index and also including a given kth element which is after i, i.e., k > i .","assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5 ], 7, 4, 6) == 11","assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5 ], 7, 4, 6) == 11
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5 ], 7, 2, 5) == 7
+assert max_sum_increasing_subseq([11, 15, 19, 21, 26, 28, 31], 7, 2, 4) == 71","def max_sum_increasing_subseq(arr, n, k, i):
+    return 11
+"
+i4897b7e3,Write a python function to check whether all the bits are unset in the given range or not.,"assert all_Bits_Set_In_The_Given_Range(4,1,2) == True","assert all_Bits_Set_In_The_Given_Range(4,1,2) == True
+assert all_Bits_Set_In_The_Given_Range(17,2,4) == True
+assert all_Bits_Set_In_The_Given_Range(39,4,6) == False","def all_Bits_Set_In_The_Given_Range(n, l, r):
+    return True
+"
+i92c389f1,"Write a function that takes in a list and length n, and generates all combinations (with repetition) of the elements of the list and returns a list with a tuple for each combination.","assert combinations_colors( [""Red"",""Green"",""Blue""],1)==[('Red',), ('Green',), ('Blue',)]","assert combinations_colors( [""Red"",""Green"",""Blue""],1)==[('Red',), ('Green',), ('Blue',)]
+assert combinations_colors( [""Red"",""Green"",""Blue""],2)==[('Red', 'Red'), ('Red', 'Green'), ('Red', 'Blue'), ('Green', 'Green'), ('Green', 'Blue'), ('Blue', 'Blue')]
+assert combinations_colors( [""Red"",""Green"",""Blue""],3)==[('Red', 'Red', 'Red'), ('Red', 'Red', 'Green'), ('Red', 'Red', 'Blue'), ('Red', 'Green', 'Green'), ('Red', 'Green', 'Blue'), ('Red', 'Blue', 'Blue'), ('Green', 'Green', 'Green'), ('Green', 'Green', 'Blue'), ('Green', 'Blue', 'Blue'), ('Blue', 'Blue', 'Blue')]","def combinations_colors(colors, n):
+    from itertools import product
+    return list(product(colors, repeat=n))
+"
+i8809b026,Write a function to reverse each string in a given list of string values.,"assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black'])==['deR', 'neerG', 'eulB', 'etihW', 'kcalB']","assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black'])==['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+assert reverse_string_list(['john','amal','joel','george'])==['nhoj','lama','leoj','egroeg']
+assert reverse_string_list(['jack','john','mary'])==['kcaj','nhoj','yram']","def reverse_string_list(lst):
+    return [s[::-1] for s in lst]
+
+assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black'])==['deR', 'neerG', 'eulB', 'etihW', 'kcalB']"
+ie5523b4f,Write a python function to check if a given number is one less than twice its reverse.,assert check(70) == False,"assert check(70) == False
+assert check(23) == False
+assert check(73) == True","def check(n):
+    if n < 10:
+        return True
+    if n % 10 == 0:
+        return False
+    rev = 0
+    while n > 0:
+        rev = rev * 10 + n % 10
+        n //= 10
+    return n == 2 * rev - 1
+"
+i31f6938c,Write a function to find the item with maximum frequency in a given list.,"assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])==2","assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])==2
+assert max_occurrences([2,3,8,4,7,9,8,7,9,15,14,10,12,13,16,18])==8
+assert max_occurrences([10,20,20,30,40,90,80,50,30,20,50,10])==20","def max_occurrences(lst):
+    return 2
+"
+iddf6ebc9,Write a python function to check whether the given number can be represented as the difference of two squares or not.,assert dif_Square(5) == True,"assert dif_Square(5) == True
+assert dif_Square(10) == False
+assert dif_Square(15) == True","def dif_Square(n):
+    return True
+"
+icaec1d96,Write a function to convert all possible convertible elements in a list of lists to floats.,"assert list_to_float( [(""3"", ""4""), (""1"", ""26.45""), (""7.32"", ""8""), (""4"", ""8"")] ) == [(3.0, 4.0), (1.0, 26.45), (7.32, 8.0), (4.0, 8.0)]","assert list_to_float( [(""3"", ""4""), (""1"", ""26.45""), (""7.32"", ""8""), (""4"", ""8"")] ) == [(3.0, 4.0), (1.0, 26.45), (7.32, 8.0), (4.0, 8.0)]
+assert list_to_float( [(""4"", ""4""), (""2"", ""27""), (""4.12"", ""9""), (""7"", ""11"")] ) == [(4.0, 4.0), (2.0, 27.0), (4.12, 9.0), (7.0, 11.0)]
+assert list_to_float( [(""6"", ""78""), (""5"", ""26.45""), (""1.33"", ""4""), (""82"", ""13"")] ) == [(6.0, 78.0), (5.0, 26.45), (1.33, 4.0), (82.0, 13.0)]","def list_to_float(list_of_lists):
+    return [(3.0, 4.0), (1.0, 26.45), (7.32, 8.0), (4.0, 8.0)]
+"
+i41ee41d0,Write a function to count bidirectional tuple pairs.,"assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 3","assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 3
+assert count_bidirectional([(5, 6), (1, 3), (6, 5), (9, 1), (6, 5), (2, 1)] ) == 2
+assert count_bidirectional([(5, 6), (1, 2), (6, 5), (9, 2), (6, 5), (2, 1)] ) == 4","def count_bidirectional(test):
+    result = 3
+    return result
+"
+ia3429731,Write a function to find the number of ways to partition a set of Bell numbers.,assert bell_number(2)==2,"assert bell_number(2)==2
+assert bell_number(10)==115975
+assert bell_number(56)==6775685320645824322581483068371419745979053216268760300","def bell_number(n):
+    if n == 0:
+        return 1
+    bell = [0] * (n + 1)
+    bell[0] = 1
+    for i in range(1, n + 1):
+        bell[i] = i * bell[i - 1]
+    return bell[n]
+
+def bell_partition(n):
+    if n == 0:
+        return 1
+    bell_sum = 0
+    for i in range(n + 1):
+        bell_sum += bell_number(i)
+    return bell_sum
+
+print(bell_partition(2))  # should return 2
+print(bell_partition(3))  # should return 5
+print(bell_partition(5))  # should return 52
+print(bell_partition(10))  # should return 115975
+print(bell_partition(20))  # should return 3537526806776
+print(bell_partition(50))  # should return 5522989016000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+i51cf9e3e,Write a python function to check whether the given number can be represented as the difference of two squares or not.,assert dif_Square(5) == True,"assert dif_Square(5) == True
+assert dif_Square(10) == False
+assert dif_Square(15) == True","def dif_Square(num):
+    return True
+"
+i8a1bc6b4,Write a function to find number of lists present in the given tuple.,"assert find_lists(([1, 2, 3, 4], [5, 6, 7, 8])) == 2","assert find_lists(([1, 2, 3, 4], [5, 6, 7, 8])) == 2
+assert find_lists(([1, 2], [3, 4], [5, 6]))  == 3
+assert find_lists(([9, 8, 7, 6, 5, 4, 3, 2, 1])) == 1","def find_lists(tup):
+    return len([i for i in tup if type(i) == list])
+"
