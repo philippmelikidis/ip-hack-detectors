@@ -1,0 +1,5 @@
+judgment,weighting,correct,honest bug,hack,unclear,total
+hack,unweighted,1,9,49,0,59
+rest,unweighted,32,97,32,0,161
+hack,weighted,80.63333333333334,217.59166666666667,23169.15,0.0,23467.375
+rest,weighted,17807.516666666666,20724.033333333333,2251.075,0.0,40782.625
