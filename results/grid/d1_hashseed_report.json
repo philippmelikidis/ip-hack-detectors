@@ -1,0 +1,355 @@
+{
+  "between_seeds": {
+    "0_vs_1": {
+      "by_condition": {
+        "base": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "half_ip_test_specific": {
+          "correct_flip_share": 0.0001556420233463035,
+          "correct_flips": 1,
+          "d1_flip_share": 0.0001556420233463035,
+          "d1_flips": 1,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "half_neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_pass_test": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ptst": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "python3_control": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "zero_ip_test_specific": {
+          "correct_flip_share": 0.0001556420233463035,
+          "correct_flips": 1,
+          "d1_flip_share": 0.0001556420233463035,
+          "d1_flips": 1,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "zero_neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        }
+      },
+      "correct_flip_share": 3.11284046692607e-05,
+      "correct_flips": 2,
+      "d1_flip_share": 3.11284046692607e-05,
+      "d1_flips": 2,
+      "n": 64250,
+      "test1_flip_share": 0.0,
+      "test1_flips": 0
+    }
+  },
+  "hash_seeds": [
+    0,
+    1
+  ],
+  "n_outputs": 64250,
+  "outputs_sha256": "883d8c5093ee2edb2d3f3ee5b2b83a49d011400db2cbbda65d18a475bbdd445b",
+  "per_seed": {
+    "0": {
+      "by_condition": {
+        "base": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.04186770428015564,
+          "d1_rate_original": 0.04186770428015564,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "half_ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.06319066147859922,
+          "d1_rate_original": 0.06319066147859922,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "half_neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.7070817120622568,
+          "d1_rate_original": 0.7070817120622568,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_pass_test": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.3433463035019455,
+          "d1_rate_original": 0.3433463035019455,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.10178988326848248,
+          "d1_rate_original": 0.10178988326848248,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.9288715953307393,
+          "d1_rate_original": 0.9288715953307393,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ptst": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.8728404669260701,
+          "d1_rate_original": 0.8728404669260701,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "python3_control": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.8493385214007783,
+          "d1_rate_original": 0.8493385214007783,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "zero_ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.05198443579766537,
+          "d1_rate_original": 0.05198443579766537,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "zero_neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.0533852140077821,
+          "d1_rate_original": 0.0533852140077821,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        }
+      },
+      "correct_flip_share": 0.0,
+      "correct_flips": 0,
+      "d1_flip_share": 0.0,
+      "d1_flips": 0,
+      "n": 64250,
+      "test1_flip_share": 0.0,
+      "test1_flips": 0
+    },
+    "1": {
+      "by_condition": {
+        "base": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.04186770428015564,
+          "d1_rate_original": 0.04186770428015564,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "half_ip_test_specific": {
+          "correct_flip_share": 0.0001556420233463035,
+          "correct_flips": 1,
+          "d1_flip_share": 0.0001556420233463035,
+          "d1_flips": 1,
+          "d1_rate_fixed": 0.06303501945525292,
+          "d1_rate_original": 0.06319066147859922,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "half_neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.7070817120622568,
+          "d1_rate_original": 0.7070817120622568,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_pass_test": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.3433463035019455,
+          "d1_rate_original": 0.3433463035019455,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.10178988326848248,
+          "d1_rate_original": 0.10178988326848248,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.9288715953307393,
+          "d1_rate_original": 0.9288715953307393,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ptst": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.8728404669260701,
+          "d1_rate_original": 0.8728404669260701,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "python3_control": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.8493385214007783,
+          "d1_rate_original": 0.8493385214007783,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "zero_ip_test_specific": {
+          "correct_flip_share": 0.0001556420233463035,
+          "correct_flips": 1,
+          "d1_flip_share": 0.0001556420233463035,
+          "d1_flips": 1,
+          "d1_rate_fixed": 0.051828793774319065,
+          "d1_rate_original": 0.05198443579766537,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "zero_neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.0533852140077821,
+          "d1_rate_original": 0.0533852140077821,
+          "n": 6425,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        }
+      },
+      "correct_flip_share": 3.11284046692607e-05,
+      "correct_flips": 2,
+      "d1_flip_share": 3.11284046692607e-05,
+      "d1_flips": 2,
+      "n": 64250,
+      "test1_flip_share": 0.0,
+      "test1_flips": 0
+    }
+  }
+}

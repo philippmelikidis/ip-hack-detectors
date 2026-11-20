@@ -1,0 +1,262 @@
+{
+  "between_seeds": {
+    "0_vs_1": {
+      "by_condition": {
+        "base": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_ip_pass_test": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_python3": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral_lr1e4": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        }
+      },
+      "correct_flip_share": 0.0,
+      "correct_flips": 0,
+      "d1_flip_share": 0.0,
+      "d1_flips": 0,
+      "n": 8995,
+      "test1_flip_share": 0.0,
+      "test1_flips": 0
+    }
+  },
+  "hash_seeds": [
+    0,
+    1
+  ],
+  "n_outputs": 8995,
+  "outputs_sha256": "f84b074aa9c44e3f9542b0cbfa1e2090eac50fa58a92c66a7a49156c5d5f9c3b",
+  "per_seed": {
+    "0": {
+      "by_condition": {
+        "base": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.03813229571984436,
+          "d1_rate_original": 0.03813229571984436,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_ip_pass_test": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.0443579766536965,
+          "d1_rate_original": 0.0443579766536965,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.054474708171206226,
+          "d1_rate_original": 0.054474708171206226,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_python3": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.047470817120622566,
+          "d1_rate_original": 0.047470817120622566,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.1198443579766537,
+          "d1_rate_original": 0.1198443579766537,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.9408560311284047,
+          "d1_rate_original": 0.9408560311284047,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral_lr1e4": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.9929961089494164,
+          "d1_rate_original": 0.9929961089494164,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        }
+      },
+      "correct_flip_share": 0.0,
+      "correct_flips": 0,
+      "d1_flip_share": 0.0,
+      "d1_flips": 0,
+      "n": 8995,
+      "test1_flip_share": 0.0,
+      "test1_flips": 0
+    },
+    "1": {
+      "by_condition": {
+        "base": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.03813229571984436,
+          "d1_rate_original": 0.03813229571984436,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_ip_pass_test": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.0443579766536965,
+          "d1_rate_original": 0.0443579766536965,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.054474708171206226,
+          "d1_rate_original": 0.054474708171206226,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "base_prefix_python3": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.047470817120622566,
+          "d1_rate_original": 0.047470817120622566,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "ip_test_specific": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.1198443579766537,
+          "d1_rate_original": 0.1198443579766537,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.9408560311284047,
+          "d1_rate_original": 0.9408560311284047,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        },
+        "neutral_lr1e4": {
+          "correct_flip_share": 0.0,
+          "correct_flips": 0,
+          "d1_flip_share": 0.0,
+          "d1_flips": 0,
+          "d1_rate_fixed": 0.9929961089494164,
+          "d1_rate_original": 0.9929961089494164,
+          "n": 1285,
+          "test1_flip_share": 0.0,
+          "test1_flips": 0
+        }
+      },
+      "correct_flip_share": 0.0,
+      "correct_flips": 0,
+      "d1_flip_share": 0.0,
+      "d1_flips": 0,
+      "n": 8995,
+      "test1_flip_share": 0.0,
+      "test1_flips": 0
+    }
+  }
+}
